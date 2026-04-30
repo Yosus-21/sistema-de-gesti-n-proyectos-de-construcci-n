@@ -1,0 +1,16 @@
+services:
+  app:
+    container_name: gestion-proyectos-api
+    build:
+      context: .
+      target: development
+    command: npm run start:dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
