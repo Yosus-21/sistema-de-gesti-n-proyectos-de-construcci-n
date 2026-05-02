@@ -1,0 +1,6 @@
+export enum EstadoAsignacion {
+  PENDIENTE = 'PENDIENTE',
+  CONFIRMADA = 'CONFIRMADA',
+  CANCELADA = 'CANCELADA',
+  REASIGNADA = 'REASIGNADA',
+}

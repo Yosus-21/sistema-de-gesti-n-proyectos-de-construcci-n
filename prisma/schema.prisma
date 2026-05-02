@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EstadoProyecto {
+  PLANIFICACION
+  EN_EJECUCION
+  PAUSADO
+  FINALIZADO
+  CANCELADO
+}
+
+enum EstadoCronograma {
+  PLANIFICADO
+  EN_EJECUCION
+  REPLANIFICADO
+  ATRASADO
+  FINALIZADO
+}
+
+enum EstadoTarea {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADA
+  ATRASADA
+  CANCELADA
+}
+
+enum TipoTarea {
+  OBRA_BRUTA
+  OBRA_FINA
+}
+
+enum PrioridadTarea {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum TipoAlerta {
+  MATERIAL_BAJO
+  RETRASO_TAREA
+  DESVIACION_CRONOGRAMA
+  PLAZO_CRITICO
+}
+
+enum EstadoAlerta {
+  ACTIVA
+  INACTIVA
+  NOTIFICADA
+  RESUELTA
+}
+
+enum EstadoAsignacion {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  REASIGNADA
+}
+
+enum EstadoOrdenCompra {
+  BORRADOR
+  EMITIDA
+  RECIBIDA
+  CANCELADA
+}
+
+enum TipoMaterial {
+  OBRA_BRUTA
+  OBRA_FINA
+  GENERAL
+}
+
+enum OcupacionTrabajador {
+  INGENIERO_CIVIL
+  CONTRATISTA
+  ALBANIL
+  PLOMERO
+  ELECTRICISTA
+  VIDRIERO
+  CARPINTERO
+}
+
+enum TipoReporte {
+  AVANCE_PROYECTO
+  MATERIALES
+  COSTOS
+  ALERTAS
+  GENERAL
+}
+
+enum MetodoNotificacion {
+  EMAIL
+  SISTEMA
+  WHATSAPP
+}
+
+model Cliente {
+  idCliente   Int        @id @default(autoincrement())
+  nombre      String
+  direccion   String
+  telefono    String
+  correo      String
+  tipoCliente String
+  proyectos   Proyecto[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Proyecto {
+  idProyecto               Int                  @id @default(autoincrement())
+  nombre                   String
+  descripcion              String
+  ubicacion                String
+  presupuesto              Float
+  fechaInicio              DateTime
+  fechaFinEstimada         DateTime
+  estadoProyecto           EstadoProyecto
+  especificacionesTecnicas String
+  idCliente                Int?
+  cliente                  Cliente?             @relation(fields: [idCliente], references: [idCliente])
+  cronograma               Cronograma?
+  contratos                Contrato[]
+  pronosticosMaterial      PronosticoMaterial[]
+  alertas                  Alerta[]
+  reportes                 Reporte[]
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+}
+
+model Cronograma {
+  idCronograma            Int              @id @default(autoincrement())
+  nombre                  String
+  fechaCreacion           DateTime
+  estadoCronograma        EstadoCronograma
+  fechaUltimaModificacion DateTime?
+  motivoReplanificacion   String?
+  accionesAnteRetraso     String?
+  idProyecto              Int?             @unique
+  proyecto                Proyecto?        @relation(fields: [idProyecto], references: [idProyecto])
+  tareas                  Tarea[]
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+}
+
+model Tarea {
+  idTarea                Int                  @id @default(autoincrement())
+  nombre                 String
+  descripcion            String
+  tipoTarea              TipoTarea
+  perfilRequerido        OcupacionTrabajador
+  duracionEstimada       Float
+  fechaInicioPlanificada DateTime
+  fechaFinPlanificada    DateTime
+  fechaInicioReal        DateTime?
+  fechaFinReal           DateTime?
+  estadoTarea            EstadoTarea
+  prioridad              PrioridadTarea
+  observaciones          String?
+  accionesAnteRetraso    String?
+  idCronograma           Int?
+  cronograma             Cronograma?          @relation(fields: [idCronograma], references: [idCronograma])
+  seguimientos           Seguimiento[]
+  asignacionesTarea      AsignacionTarea[]
+  asignacionesMaterial   AsignacionMaterial[]
+  alertas                Alerta[]
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+}
+
+model Seguimiento {
+  idSeguimiento         Int      @id @default(autoincrement())
+  fechaSeguimiento      DateTime
+  estadoReportado       String
+  cantidadMaterialUsado Float
+  observaciones         String?
+  porcentajeAvance      Float
+  idTarea               Int?
+  tarea                 Tarea?   @relation(fields: [idTarea], references: [idTarea])
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Contrato {
+  idContrato           Int               @id @default(autoincrement())
+  fechaInicio          DateTime
+  fechaFin             DateTime
+  costoTotal           Float
+  metodoPago           String
+  terminosYCondiciones String
+  estadoContrato       String
+  idProyecto           Int?
+  idContratista        Int?
+  proyecto             Proyecto?         @relation(fields: [idProyecto], references: [idProyecto])
+  contratista          Contratista?      @relation(fields: [idContratista], references: [idContratista])
+  detalles             ContratoDetalle[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+}
+
+model ContratoDetalle {
+  idContratoDetalle   Int       @id @default(autoincrement())
+  cantidadPersonas    Float
+  costoUnitarioPorDia Float
+  idContrato          Int?
+  idCargo             Int?
+  contrato            Contrato? @relation(fields: [idContrato], references: [idContrato])
+  cargo               Cargo?    @relation(fields: [idCargo], references: [idCargo])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Contratista {
+  idContratista Int        @id @default(autoincrement())
+  nombre        String
+  ci            String
+  empresa       String?
+  telefono      String
+  correo        String
+  contratos     Contrato[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Trabajador {
+  idTrabajador        Int                 @id @default(autoincrement())
+  nombre              String
+  ci                  String
+  telefono            String
+  correo              String
+  licenciaProfesional String?
+  aniosExperiencia    Float
+  especializaciones   String?
+  certificaciones     String?
+  ocupacion           OcupacionTrabajador
+  asignacionesTarea   AsignacionTarea[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+model Cargo {
+  idCargo           Int               @id @default(autoincrement())
+  nombre            String
+  descripcion       String
+  tipoObra          TipoTarea
+  licenciaRequerida String?
+  contratosDetalle  ContratoDetalle[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model Material {
+  idMaterial               Int                  @id @default(autoincrement())
+  nombre                   String
+  descripcion              String
+  tipoMaterial             TipoMaterial
+  unidad                   String
+  cantidadDisponible       Float
+  costoUnitario            Float
+  especificacionesTecnicas String?
+  lineasOrdenCompra        LineaOrdenCompra[]
+  entregasMaterial         EntregaMaterial[]
+  asignacionesMaterial     AsignacionMaterial[]
+  pronosticosMaterial      PronosticoMaterial[]
+  alertas                  Alerta[]
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+}
+
+model Proveedor {
+  idProveedor     Int           @id @default(autoincrement())
+  nombre          String
+  direccion       String
+  telefono        String
+  correo          String
+  terminosEntrega String?
+  ordenesCompra   OrdenCompra[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model OrdenCompra {
+  idOrdenCompra        Int                @id @default(autoincrement())
+  fechaOrden           DateTime
+  fechaEntregaEstimada DateTime?
+  estadoOrden          EstadoOrdenCompra
+  idProveedor          Int?
+  proveedor            Proveedor?         @relation(fields: [idProveedor], references: [idProveedor])
+  lineas               LineaOrdenCompra[]
+  entregasMaterial     EntregaMaterial[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
+
+model LineaOrdenCompra {
+  idLineaOrdenCompra     Int          @id @default(autoincrement())
+  cantidadSolicitada     Float
+  precioUnitarioAcordado Float
+  estadoLinea            String?
+  idOrdenCompra          Int?
+  idMaterial             Int?
+  ordenCompra            OrdenCompra? @relation(fields: [idOrdenCompra], references: [idOrdenCompra])
+  material               Material?    @relation(fields: [idMaterial], references: [idMaterial])
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+}
+
+model EntregaMaterial {
+  idEntregaMaterial Int          @id @default(autoincrement())
+  fechaEntrega      DateTime
+  estadoEntrega     String
+  observaciones     String?
+  cantidadEntregada Float
+  idOrdenCompra     Int?
+  idMaterial        Int?
+  ordenCompra       OrdenCompra? @relation(fields: [idOrdenCompra], references: [idOrdenCompra])
+  material          Material?    @relation(fields: [idMaterial], references: [idMaterial])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model AsignacionTarea {
+  idAsignacionTarea      Int              @id @default(autoincrement())
+  fechaAsignacion        DateTime
+  rolEnLaTarea           String
+  estadoAsignacion       EstadoAsignacion
+  observaciones          String?
+  asignadaPorContratista Boolean
+  idTarea                Int?
+  idTrabajador           Int?
+  tarea                  Tarea?           @relation(fields: [idTarea], references: [idTarea])
+  trabajador             Trabajador?      @relation(fields: [idTrabajador], references: [idTrabajador])
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+}
+
+model AsignacionMaterial {
+  idAsignacionMaterial Int              @id @default(autoincrement())
+  cantidadAsignada     Float
+  fechaAsignacion      DateTime
+  criteriosPrioridad   String?
+  costoMaximoPermitido Float?
+  restricciones        String?
+  estadoAsignacion     EstadoAsignacion
+  generadaPorIa        Boolean
+  idTarea              Int?
+  idMaterial           Int?
+  tarea                Tarea?           @relation(fields: [idTarea], references: [idTarea])
+  material             Material?        @relation(fields: [idMaterial], references: [idMaterial])
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model PronosticoMaterial {
+  idPronosticoMaterial Int       @id @default(autoincrement())
+  periodoAnalisis      String
+  stockMinimo          Float
+  stockMaximo          Float
+  fechaGeneracion      DateTime
+  nivelConfianza       Float
+  observaciones        String?
+  idProyecto           Int?
+  idMaterial           Int?
+  proyecto             Proyecto? @relation(fields: [idProyecto], references: [idProyecto])
+  material             Material? @relation(fields: [idMaterial], references: [idMaterial])
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model Alerta {
+  idAlerta            Int                 @id @default(autoincrement())
+  criterioActivacion  String
+  tipoAlerta          TipoAlerta
+  estadoAlerta        EstadoAlerta
+  mensajeNotificacion String?
+  metodoNotificacion  MetodoNotificacion?
+  fechaGeneracion     DateTime?
+  idProyecto          Int?
+  idTarea             Int?
+  idMaterial          Int?
+  proyecto            Proyecto?           @relation(fields: [idProyecto], references: [idProyecto])
+  tarea               Tarea?              @relation(fields: [idTarea], references: [idTarea])
+  material            Material?           @relation(fields: [idMaterial], references: [idMaterial])
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+model Reporte {
+  idReporte               Int         @id @default(autoincrement())
+  tipoReporte             TipoReporte
+  fechaGeneracion         DateTime
+  fechaInicioPeriodo      DateTime?
+  fechaFinPeriodo         DateTime?
+  porcentajeAvanceGeneral Float?
+  contenidoResumen        String
+  rutaArchivoPdf          String?
+  idProyecto              Int?
+  proyecto                Proyecto?   @relation(fields: [idProyecto], references: [idProyecto])
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+}

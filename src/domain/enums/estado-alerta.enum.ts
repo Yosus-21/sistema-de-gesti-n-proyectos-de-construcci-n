@@ -1,0 +1,6 @@
+export enum EstadoAlerta {
+  ACTIVA = 'ACTIVA',
+  INACTIVA = 'INACTIVA',
+  NOTIFICADA = 'NOTIFICADA',
+  RESUELTA = 'RESUELTA',
+}
