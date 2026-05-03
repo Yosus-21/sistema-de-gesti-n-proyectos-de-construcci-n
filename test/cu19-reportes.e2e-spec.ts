@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -12,10 +11,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoPruebaId: number;
   let reporteProyectoId: number | undefined;
@@ -130,6 +134,11 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu19-auth',
+    );
     await cleanupTestData();
 
     const clientePrueba = await prismaService.cliente.create({
@@ -167,7 +176,8 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU19', async () => {
-    const generalResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const generalResponse = await api
       .post('/cu19/reportes')
       .send({
         tipoReporte: TipoReporte.GENERAL,
@@ -186,7 +196,7 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
       }),
     });
 
-    const proyectoResponse = await request(app.getHttpServer())
+    const proyectoResponse = await api
       .post('/cu19/reportes')
       .send({
         idProyecto: proyectoPruebaId,
@@ -214,7 +224,7 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
 
     reporteProyectoId = proyectoResponseBody.data.idReporte;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu19/reportes')
       .send({
         idProyecto: 999999,
@@ -232,7 +242,7 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu19/reportes')
       .send({
         tipoReporte: TipoReporte.COSTOS,
@@ -252,7 +262,7 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu19/reportes')
       .query({
         idProyecto: proyectoPruebaId,
@@ -274,7 +284,7 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu19/reportes/${reporteProyectoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -289,7 +299,7 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu19/reportes/${reporteProyectoId}/exportar-pdf`)
       .expect(200)
       .expect(({ body }) => {
@@ -316,7 +326,7 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
       `reports/reporte-${reporteProyectoId}.pdf`,
     );
 
-    await request(app.getHttpServer())
+    await api
       .patch('/cu19/reportes/999999/exportar-pdf')
       .expect(404)
       .expect(({ body }) => {

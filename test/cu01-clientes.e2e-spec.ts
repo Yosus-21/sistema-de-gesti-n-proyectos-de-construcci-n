@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -11,10 +10,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU01 Gestionar Clientes (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let createdClientId: number | undefined;
 
   const testEmail = `cliente-e2e-cu01-${Date.now()}@example.com`;
@@ -32,6 +36,11 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu01-auth',
+    );
 
     await prismaService.cliente.deleteMany({
       where: {
@@ -55,7 +64,8 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
   });
 
   it('ejecuta el flujo completo de CU01', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu01/clientes')
       .send({
         nombre: 'Cliente E2E CU01',
@@ -85,7 +95,7 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
 
     createdClientId = createResponseBody.data.idCliente;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu01/clientes')
       .send({
         nombre: 'Cliente E2E CU01 Duplicado',
@@ -107,7 +117,7 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu01/clientes')
       .query({
         busqueda: 'E2E CU01',
@@ -128,7 +138,7 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu01/clientes/${createdClientId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -142,7 +152,7 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu01/clientes/${createdClientId}`)
       .send({
         nombre: 'Cliente E2E CU01 Actualizado',
@@ -163,7 +173,7 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .delete(`/cu01/clientes/${createdClientId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -177,7 +187,7 @@ describe('CU01 Gestionar Clientes (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu01/clientes/${createdClientId}`)
       .expect(404)
       .expect(({ body }) => {

@@ -18,3 +18,4 @@ export * from './reporte.entity';
 export * from './seguimiento.entity';
 export * from './tarea.entity';
 export * from './trabajador.entity';
+export * from './usuario.entity';

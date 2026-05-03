@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -12,10 +11,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let proveedorPruebaId: number;
   let materialPruebaId: number;
   let materialFueraOrdenId: number;
@@ -157,6 +161,11 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu15-auth',
+    );
     await cleanupTestData();
 
     const proveedorPrueba = await prismaService.proveedor.create({
@@ -226,7 +235,8 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU15', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu15/entregas-materiales')
       .send({
         idOrdenCompra: ordenCompraPruebaId,
@@ -255,7 +265,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
 
     entregaCreadaId = createResponseBody.data.idEntregaMaterial;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu15/entregas-materiales')
       .send({
         idOrdenCompra: 999999,
@@ -275,7 +285,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu15/entregas-materiales')
       .send({
         idOrdenCompra: ordenCompraPruebaId,
@@ -295,7 +305,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu15/entregas-materiales')
       .send({
         idOrdenCompra: ordenCompraPruebaId,
@@ -315,7 +325,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu15/entregas-materiales')
       .send({
         idOrdenCompra: ordenCompraPruebaId,
@@ -336,7 +346,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu15/entregas-materiales')
       .query({
         idOrdenCompra: ordenCompraPruebaId,
@@ -359,7 +369,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu15/entregas-materiales/${entregaCreadaId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -375,7 +385,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(
         `/cu15/entregas-materiales/${entregaCreadaId}/verificar-contra-orden/${ordenCompraPruebaId}`,
       )
@@ -395,7 +405,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu15/entregas-materiales/${entregaCreadaId}/confirmar-recepcion`)
       .expect(200)
       .expect(({ body }) => {
@@ -417,7 +427,7 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
 
     expect(materialActualizado?.cantidadDisponible).toBe(15);
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu15/entregas-materiales/${entregaCreadaId}/confirmar-recepcion`)
       .expect(409)
       .expect(({ body }) => {

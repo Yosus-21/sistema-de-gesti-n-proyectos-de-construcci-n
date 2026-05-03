@@ -15,3 +15,4 @@ export * from './asignacion-material-repository.interface';
 export * from './pronostico-material-repository.interface';
 export * from './alerta-repository.interface';
 export * from './reporte-repository.interface';
+export * from './usuario-repository.interface';

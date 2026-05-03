@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -12,10 +11,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let proveedorPruebaId: number;
   let materialPruebaId: number;
   let ordenCompraCreadaId: number | undefined;
@@ -148,6 +152,11 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu14-auth',
+    );
     await cleanupTestData();
 
     const proveedorPrueba = await prismaService.proveedor.create({
@@ -183,7 +192,8 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU14', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu14/ordenes-compra')
       .send({
         idProveedor: proveedorPruebaId,
@@ -208,7 +218,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
 
     ordenCompraCreadaId = createResponseBody.data.idOrdenCompra;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu14/ordenes-compra')
       .send({
         idProveedor: 999999,
@@ -226,7 +236,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu14/ordenes-compra')
       .send({
         idProveedor: proveedorPruebaId,
@@ -246,7 +256,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post(`/cu14/ordenes-compra/${ordenCompraCreadaId}/lineas`)
       .send({
         idMaterial: materialPruebaId,
@@ -269,7 +279,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post(`/cu14/ordenes-compra/${ordenCompraCreadaId}/lineas`)
       .send({
         idMaterial: 999999,
@@ -288,7 +298,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu14/ordenes-compra')
       .query({
         idProveedor: proveedorPruebaId,
@@ -310,7 +320,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu14/ordenes-compra/${ordenCompraCreadaId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -325,7 +335,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu14/ordenes-compra/${ordenCompraCreadaId}`)
       .send({
         fechaEntregaEstimada: '2026-06-12T00:00:00.000Z',
@@ -342,7 +352,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu14/ordenes-compra/${ordenCompraCreadaId}/estado`)
       .send({
         estadoOrden: EstadoOrdenCompra.EMITIDA,
@@ -359,7 +369,7 @@ describe('CU14 Gestion de Ordenes de Compra (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu14/ordenes-compra/${ordenCompraCreadaId}/monto-total`)
       .expect(200)
       .expect(({ body }) => {

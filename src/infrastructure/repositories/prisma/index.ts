@@ -16,3 +16,4 @@ export * from './prisma-asignacion-material.repository';
 export * from './prisma-pronostico-material.repository';
 export * from './prisma-alerta.repository';
 export * from './prisma-reporte.repository';
+export * from './prisma-usuario.repository';

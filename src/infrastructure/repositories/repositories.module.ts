@@ -18,6 +18,7 @@ import {
   PrismaPronosticoMaterialRepository,
   PrismaAlertaRepository,
   PrismaReporteRepository,
+  PrismaUsuarioRepository,
 } from './prisma';
 import {
   ALERTA_REPOSITORY,
@@ -37,6 +38,7 @@ import {
   SEGUIMIENTO_REPOSITORY,
   TAREA_REPOSITORY,
   TRABAJADOR_REPOSITORY,
+  USUARIO_REPOSITORY,
 } from './repository.tokens';
 
 const repositoryProviders: Provider[] = [
@@ -108,6 +110,10 @@ const repositoryProviders: Provider[] = [
     provide: REPORTE_REPOSITORY,
     useClass: PrismaReporteRepository,
   },
+  {
+    provide: USUARIO_REPOSITORY,
+    useClass: PrismaUsuarioRepository,
+  },
 ];
 
 const repositoryExports = [
@@ -128,6 +134,7 @@ const repositoryExports = [
   PRONOSTICO_MATERIAL_REPOSITORY,
   ALERTA_REPOSITORY,
   REPORTE_REPOSITORY,
+  USUARIO_REPOSITORY,
 ];
 
 @Module({

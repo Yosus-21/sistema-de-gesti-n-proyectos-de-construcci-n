@@ -54,6 +54,8 @@ export class GenerarPropuestaAsignacionMaterialUseCase {
     }
 
     const materiales = await this.materialRepository.findMany();
+    // IA provisional: hoy la propuesta se resuelve con una heurística interna.
+    // En una fase futura este bloque puede delegarse a un puerto/interfaz hacia un servicio externo de IA.
     const materialesDisponibles = materiales
       .filter((material) => material.cantidadDisponible > 0)
       .filter((material) =>

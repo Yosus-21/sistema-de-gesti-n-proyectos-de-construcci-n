@@ -7,6 +7,7 @@ export * from './estado-tarea.enum';
 export * from './metodo-notificacion.enum';
 export * from './ocupacion-trabajador.enum';
 export * from './prioridad-tarea.enum';
+export * from './rol-usuario.enum';
 export * from './tipo-alerta.enum';
 export * from './tipo-material.enum';
 export * from './tipo-reporte.enum';

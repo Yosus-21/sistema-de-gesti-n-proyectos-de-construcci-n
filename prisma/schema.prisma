@@ -101,6 +101,15 @@ enum MetodoNotificacion {
   WHATSAPP
 }
 
+enum RolUsuario {
+  ADMIN
+  GESTOR_PROYECTO
+  INGENIERO
+  ENCARGADO_COMPRAS
+  CONTRATISTA
+  LECTOR
+}
+
 model Cliente {
   idCliente   Int        @id @default(autoincrement())
   nombre      String
@@ -404,4 +413,15 @@ model Reporte {
   proyecto                Proyecto?   @relation(fields: [idProyecto], references: [idProyecto])
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
+}
+
+model Usuario {
+  idUsuario          Int        @id @default(autoincrement())
+  nombre             String
+  correo             String     @unique
+  passwordHash       String
+  rol                RolUsuario @default(ADMIN)
+  activo             Boolean    @default(true)
+  fechaCreacion      DateTime   @default(now())
+  fechaActualizacion DateTime   @updatedAt
 }

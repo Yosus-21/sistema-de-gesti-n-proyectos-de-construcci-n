@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -18,10 +17,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoConCronogramaId: number;
   let proyectoSinCronogramaId: number;
@@ -128,6 +132,11 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu03-auth',
+    );
 
     await cleanupTestData();
 
@@ -193,7 +202,8 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU03', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu03/tareas-obra-fina')
       .send({
         idProyecto: proyectoConCronogramaId,
@@ -225,7 +235,7 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
 
     tareaCreadaId = createResponseBody.data.idTarea;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu03/tareas-obra-fina')
       .send({
         idProyecto: proyectoSinCronogramaId,
@@ -249,7 +259,7 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu03/tareas-obra-fina')
       .send({
         idProyecto: proyectoConCronogramaId,
@@ -274,7 +284,7 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu03/tareas-obra-fina')
       .send({
         idProyecto: proyectoConCronogramaId,
@@ -299,7 +309,7 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu03/tareas-obra-fina')
       .query({
         idProyecto: proyectoConCronogramaId,
@@ -320,7 +330,7 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu03/tareas-obra-fina/${tareaCreadaId}`)
       .send({
         nombre: `${nombreTareaPrueba} Actualizada`,
@@ -341,7 +351,7 @@ describe('CU03 Gestion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .delete(`/cu03/tareas-obra-fina/${tareaCreadaId}`)
       .expect(200)
       .expect(({ body }) => {

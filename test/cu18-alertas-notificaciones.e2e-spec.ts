@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -23,10 +22,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU18 Alertas y Notificaciones (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoPruebaId: number;
   let cronogramaPruebaId: number;
@@ -217,6 +221,11 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu18-auth',
+    );
     await cleanupTestData();
 
     const clientePrueba = await prismaService.cliente.create({
@@ -292,7 +301,8 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU18', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu18/alertas-notificaciones')
       .send({
         idProyecto: proyectoPruebaId,
@@ -323,7 +333,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
 
     alertaCreadaId = createResponseBody.data.idAlerta;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu18/alertas-notificaciones')
       .send({
         criterioActivacion: 'Sin destino',
@@ -342,7 +352,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu18/alertas-notificaciones')
       .send({
         idProyecto: 999999,
@@ -361,7 +371,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu18/alertas-notificaciones')
       .query({
         idProyecto: proyectoPruebaId,
@@ -382,7 +392,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu18/alertas-notificaciones/${alertaCreadaId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -397,7 +407,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post(`/cu18/alertas-notificaciones/${alertaCreadaId}/notificar`)
       .send({
         mensajeNotificacion: 'Notificación provisional de proyecto',
@@ -418,7 +428,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu18/alertas-notificaciones/${alertaCreadaId}/desactivar`)
       .expect(200)
       .expect(({ body }) => {
@@ -432,7 +442,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post(`/cu18/alertas-notificaciones/${alertaCreadaId}/notificar`)
       .send({
         mensajeNotificacion: 'Intento inválido',
@@ -450,7 +460,7 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu18/alertas-notificaciones/${alertaCreadaId}/activar`)
       .expect(200)
       .expect(({ body }) => {

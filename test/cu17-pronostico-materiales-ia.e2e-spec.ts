@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -12,10 +11,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoPruebaId: number;
   let materialPruebaId: number;
@@ -138,6 +142,11 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu17-auth',
+    );
     await cleanupTestData();
 
     const clientePrueba = await prismaService.cliente.create({
@@ -189,7 +198,8 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
   });
 
   it('ejecuta el flujo principal de CU17', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu17/pronostico-materiales-ia')
       .send({
         idProyecto: proyectoPruebaId,
@@ -220,7 +230,7 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
 
     pronosticoCreadoId = createResponseBody.data.idPronosticoMaterial;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu17/pronostico-materiales-ia')
       .send({
         idProyecto: 999999,
@@ -240,7 +250,7 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu17/pronostico-materiales-ia')
       .send({
         idProyecto: proyectoPruebaId,
@@ -261,7 +271,7 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu17/pronostico-materiales-ia')
       .send({
         idProyecto: proyectoPruebaId,
@@ -282,7 +292,7 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu17/pronostico-materiales-ia')
       .query({
         idProyecto: proyectoPruebaId,
@@ -305,7 +315,7 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu17/pronostico-materiales-ia/${pronosticoCreadoId}/ajustar`)
       .send({
         stockMinimo: 8,
@@ -327,7 +337,7 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu17/pronostico-materiales-ia/${pronosticoCreadoId}/confianza`)
       .expect(200)
       .expect(({ body }) => {
@@ -342,7 +352,7 @@ describe('CU17 Pronostico de Necesidades de Materiales mediante IA (e2e)', () =>
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu17/pronostico-materiales-ia/${pronosticoCreadoId}/confirmar`)
       .expect(200)
       .expect(({ body }) => {

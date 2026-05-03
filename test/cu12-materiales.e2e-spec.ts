@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -12,10 +11,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU12 Registro de Materiales (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let materialCreadoId: number | undefined;
 
   const timestamp = Date.now();
@@ -42,6 +46,11 @@ describe('CU12 Registro de Materiales (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu12-auth',
+    );
     await cleanupTestData();
   });
 
@@ -51,7 +60,8 @@ describe('CU12 Registro de Materiales (e2e)', () => {
   });
 
   it('ejecuta el flujo completo de CU12', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu12/materiales')
       .send({
         nombre: nombreMaterialPrueba,
@@ -82,7 +92,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
 
     materialCreadoId = createResponseBody.data.idMaterial;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu12/materiales')
       .send({
         nombre: nombreMaterialPrueba,
@@ -104,7 +114,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu12/materiales')
       .query({
         tipoMaterial: TipoMaterial.GENERAL,
@@ -126,7 +136,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu12/materiales/${materialCreadoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -141,7 +151,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu12/materiales/${materialCreadoId}`)
       .send({
         nombre: nombreMaterialActualizado,
@@ -164,7 +174,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu12/materiales/${materialCreadoId}/stock`)
       .send({
         cantidad: 15,
@@ -182,7 +192,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu12/materiales/${materialCreadoId}/stock`)
       .send({
         cantidad: -10,
@@ -200,7 +210,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu12/materiales/${materialCreadoId}/stock`)
       .send({
         cantidad: -100,
@@ -218,7 +228,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu12/materiales/${materialCreadoId}/disponibilidad`)
       .query({
         cantidadRequerida: 50,
@@ -237,7 +247,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .delete(`/cu12/materiales/${materialCreadoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -251,7 +261,7 @@ describe('CU12 Registro de Materiales (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu12/materiales/${materialCreadoId}`)
       .expect(404)
       .expect(({ body }) => {

@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -12,10 +11,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU05 Creacion de Cronograma (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoPruebaId: number;
   let cronogramaCreadoId: number | undefined;
@@ -93,6 +97,11 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu05-auth',
+    );
 
     await cleanupTestData();
 
@@ -131,7 +140,8 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU05', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu05/cronogramas')
       .send({
         idProyecto: proyectoPruebaId,
@@ -159,7 +169,7 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
 
     cronogramaCreadoId = createResponseBody.data.idCronograma;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu05/cronogramas')
       .send({
         idProyecto: 999999,
@@ -178,7 +188,7 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu05/cronogramas')
       .send({
         idProyecto: proyectoPruebaId,
@@ -197,7 +207,7 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu05/cronogramas')
       .query({
         idProyecto: proyectoPruebaId,
@@ -219,7 +229,7 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu05/cronogramas/${cronogramaCreadoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -234,7 +244,7 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu05/cronogramas/${cronogramaCreadoId}/replanificar`)
       .send({
         motivoReplanificacion: 'Ajuste por cambio de alcance',
@@ -255,7 +265,7 @@ describe('CU05 Creacion de Cronograma (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu05/cronogramas/99999999')
       .expect(404)
       .expect(({ body }) => {

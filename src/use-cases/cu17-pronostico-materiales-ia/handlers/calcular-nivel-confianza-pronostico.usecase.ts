@@ -31,6 +31,8 @@ export class CalcularNivelConfianzaPronosticoUseCase {
       );
     }
 
+    // IA provisional: el nivel de confianza se recalcula localmente con reglas heurísticas.
+    // Más adelante este cálculo puede extraerse detrás de un puerto hacia un servicio de IA dedicado.
     let nivelConfianza = pronostico.nivelConfianza ?? 70;
 
     if (pronostico.idMaterial !== undefined) {

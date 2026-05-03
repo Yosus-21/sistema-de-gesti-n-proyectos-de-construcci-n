@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -19,10 +18,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoPruebaId: number;
   let cronogramaPruebaId: number;
@@ -216,6 +220,11 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu10-auth',
+    );
     await cleanupTestData();
 
     const clientePrueba = await prismaService.cliente.create({
@@ -313,7 +322,8 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU10', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu10/asignaciones-obra-fina')
       .send({
         idTarea: tareaObraFinaId,
@@ -343,7 +353,7 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
 
     asignacionCreadaId = createResponseBody.data.idAsignacionTarea;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu10/asignaciones-obra-fina')
       .send({
         idTarea: tareaObraFinaId,
@@ -364,7 +374,7 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu10/asignaciones-obra-fina')
       .send({
         idTarea: 999999,
@@ -384,7 +394,7 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu10/asignaciones-obra-fina')
       .send({
         idTarea: tareaObraFinaId,
@@ -405,7 +415,7 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu10/asignaciones-obra-fina')
       .query({
         idTarea: tareaObraFinaId,
@@ -428,7 +438,7 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu10/asignaciones-obra-fina/${asignacionCreadaId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -444,7 +454,7 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu10/asignaciones-obra-fina/${asignacionCreadaId}`)
       .send({
         rolEnLaTarea: 'Supervisor de acabados',
@@ -464,7 +474,7 @@ describe('CU10 Asignacion de Tareas de Obra Fina (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu10/asignaciones-obra-fina/${asignacionCreadaId}/cancelar`)
       .expect(200)
       .expect(({ body }) => {

@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -12,10 +11,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU02 Creacion de Proyectos (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoCreadoId: number | undefined;
 
@@ -66,6 +70,11 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu02-auth',
+    );
 
     await cleanupTestData();
 
@@ -88,7 +97,8 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU02', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu02/proyectos')
       .send({
         idCliente: clientePruebaId,
@@ -119,7 +129,7 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
 
     proyectoCreadoId = createResponseBody.data.idProyecto;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu02/proyectos')
       .send({
         idCliente: 999999,
@@ -143,7 +153,7 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu02/proyectos')
       .send({
         idCliente: clientePruebaId,
@@ -168,7 +178,7 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu02/proyectos')
       .query({
         idCliente: clientePruebaId,
@@ -190,7 +200,7 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu02/proyectos/${proyectoCreadoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -204,7 +214,7 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu02/proyectos/${proyectoCreadoId}/estado`)
       .send({
         estadoProyecto: EstadoProyecto.EN_EJECUCION,
@@ -221,7 +231,7 @@ describe('CU02 Creacion de Proyectos (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu02/proyectos/99999999')
       .expect(404)
       .expect(({ body }) => {

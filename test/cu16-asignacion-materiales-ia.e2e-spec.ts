@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -20,10 +19,15 @@ import {
   expectObjectContaining,
   getSuccessBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoPruebaId: number;
   let cronogramaPruebaId: number;
@@ -204,6 +208,11 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu16-auth',
+    );
     await cleanupTestData();
 
     const clientePrueba = await prismaService.cliente.create({
@@ -283,7 +292,8 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU16', async () => {
-    const propuestaResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const propuestaResponse = await api
       .post('/cu16/asignacion-materiales-ia/propuestas')
       .send({
         idProyecto: proyectoPruebaId,
@@ -313,7 +323,7 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
 
     asignacionCreadaId = propuestaResponseBody.data.idAsignacionMaterial;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu16/asignacion-materiales-ia/propuestas')
       .send({
         idProyecto: 999999,
@@ -331,7 +341,7 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu16/asignacion-materiales-ia/validar-restricciones')
       .send({
         idProyecto: proyectoPruebaId,
@@ -353,7 +363,7 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu16/asignacion-materiales-ia')
       .query({
         idProyecto: proyectoPruebaId,
@@ -376,7 +386,7 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu16/asignacion-materiales-ia/${asignacionCreadaId}/ajustar`)
       .send({
         cantidadAsignada: 2,
@@ -398,7 +408,7 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu16/asignacion-materiales-ia/${asignacionCreadaId}/confirmar`)
       .expect(200)
       .expect(({ body }) => {
@@ -420,7 +430,7 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
 
     expect(materialActualizado?.cantidadDisponible).toBe(999997);
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu16/asignacion-materiales-ia/${asignacionCreadaId}/confirmar`)
       .expect(409)
       .expect(({ body }) => {
@@ -434,7 +444,7 @@ describe('CU16 Asignacion Eficiente de Materiales mediante IA (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu16/asignacion-materiales-ia/${asignacionCreadaId}/ajustar`)
       .send({
         cantidadAsignada: 3,

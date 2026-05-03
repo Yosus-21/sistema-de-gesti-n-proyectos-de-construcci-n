@@ -60,6 +60,8 @@ export class GenerarPronosticoMaterialUseCase {
       );
     }
 
+    // IA provisional: el pronóstico actual usa una heurística local y no integra servicios externos.
+    // La arquitectura permite reemplazar este cálculo por un puerto/interfaz hacia un motor de IA futuro.
     const nivelConfianza = this.calcularNivelConfianzaHeuristico(
       material?.cantidadDisponible,
       dto.stockMinimo,
@@ -87,6 +89,7 @@ export class GenerarPronosticoMaterialUseCase {
     stockMinimo: number,
     stockMaximo: number,
   ): number {
+    // Heurística intencionalmente simple para esta fase; no representa un modelo predictivo externo real.
     if (cantidadDisponible === undefined) {
       return 70;
     }

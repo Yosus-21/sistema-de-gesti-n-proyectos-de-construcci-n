@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -20,10 +19,15 @@ import {
   getSuccessBody,
   getErrorBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU06 Gestion de Seguimiento (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let clientePruebaId: number;
   let proyectoPruebaId: number;
   let cronogramaPruebaId: number;
@@ -151,6 +155,11 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu06-auth',
+    );
 
     await cleanupTestData();
 
@@ -218,7 +227,8 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
   });
 
   it('ejecuta el flujo principal de CU06', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu06/seguimientos')
       .send({
         idTarea: tareaPruebaId,
@@ -249,7 +259,7 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
 
     seguimientoCreadoId = createResponseBody.data.idSeguimiento;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu06/seguimientos')
       .send({
         idTarea: 999999,
@@ -270,7 +280,7 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu06/seguimientos')
       .send({
         idTarea: tareaPruebaId,
@@ -294,7 +304,7 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
         );
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu06/seguimientos')
       .query({
         idTarea: tareaPruebaId,
@@ -315,7 +325,7 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu06/seguimientos/${seguimientoCreadoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -330,7 +340,7 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu06/seguimientos/${seguimientoCreadoId}`)
       .send({
         estadoReportado: 'Avance actualizado',
@@ -351,7 +361,7 @@ describe('CU06 Gestion de Seguimiento (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu06/seguimientos/tareas/${tareaPruebaId}/desviacion`)
       .expect(200)
       .expect(({ body }) => {

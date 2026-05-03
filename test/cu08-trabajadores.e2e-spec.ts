@@ -1,6 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
@@ -13,10 +12,15 @@ import {
   getSuccessBody,
   getErrorBody,
 } from './helpers/e2e-response.types';
+import {
+  createAuthorizedRequest,
+  getAdminAuthHeaders,
+} from './helpers/auth-e2e.helper';
 
 describe('CU08 Gestion de Trabajador (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
+  let authHeaders: { Authorization: string };
   let trabajadorCreadoId: number | undefined;
 
   const timestamp = Date.now();
@@ -53,6 +57,11 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
     await app.init();
 
     prismaService = app.get(PrismaService);
+    authHeaders = await getAdminAuthHeaders(
+      app,
+      prismaService,
+      'e2e-cu08-auth',
+    );
     await cleanupTestData();
   });
 
@@ -62,7 +71,8 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
   });
 
   it('ejecuta el flujo completo de CU08', async () => {
-    const createResponse = await request(app.getHttpServer())
+    const api = createAuthorizedRequest(app, authHeaders);
+    const createResponse = await api
       .post('/cu08/trabajadores')
       .send({
         nombre: 'Trabajador E2E CU08',
@@ -95,7 +105,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
 
     trabajadorCreadoId = createResponseBody.data.idTrabajador;
 
-    await request(app.getHttpServer())
+    await api
       .post('/cu08/trabajadores')
       .send({
         nombre: 'Trabajador E2E CU08 Duplicado',
@@ -118,7 +128,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get('/cu08/trabajadores')
       .query({
         ocupacion: OcupacionTrabajador.ELECTRICISTA,
@@ -140,7 +150,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         ).toBe(true);
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu08/trabajadores/${trabajadorCreadoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -155,7 +165,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .patch(`/cu08/trabajadores/${trabajadorCreadoId}`)
       .send({
         nombre: 'Trabajador E2E CU08 Actualizado',
@@ -178,7 +188,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu08/trabajadores/${trabajadorCreadoId}/disponibilidad`)
       .query({
         fechaInicio: '2026-05-10',
@@ -198,7 +208,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu08/trabajadores/${trabajadorCreadoId}/disponibilidad`)
       .query({
         fechaInicio: '2026-05-20',
@@ -218,7 +228,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         );
       });
 
-    await request(app.getHttpServer())
+    await api
       .delete(`/cu08/trabajadores/${trabajadorCreadoId}`)
       .expect(200)
       .expect(({ body }) => {
@@ -232,7 +242,7 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         });
       });
 
-    await request(app.getHttpServer())
+    await api
       .get(`/cu08/trabajadores/${trabajadorCreadoId}`)
       .expect(404)
       .expect(({ body }) => {

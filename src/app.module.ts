@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AuthModule } from './auth';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { parsePositiveIntEnv } from './common';
 import { PrismaModule, RepositoriesModule } from './infrastructure';
 import { Cu01Module } from './use-cases/cu01-gestionar-clientes/cu01.module';
 import { Cu02Module } from './use-cases/cu02-creacion-proyectos/cu02.module';
@@ -24,6 +28,20 @@ import { Cu19Module } from './use-cases/cu19-generar-reportes/cu19.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRootAsync({
+      useFactory: () => {
+        const ttlInSeconds = parsePositiveIntEnv(process.env.THROTTLE_TTL, 60);
+        const limit = parsePositiveIntEnv(process.env.THROTTLE_LIMIT, 100);
+
+        return [
+          {
+            ttl: ttlInSeconds * 1000,
+            limit,
+          },
+        ];
+      },
+    }),
+    AuthModule,
     PrismaModule,
     RepositoriesModule,
     Cu01Module,
@@ -47,6 +65,12 @@ import { Cu19Module } from './use-cases/cu19-generar-reportes/cu19.module';
     Cu19Module,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
