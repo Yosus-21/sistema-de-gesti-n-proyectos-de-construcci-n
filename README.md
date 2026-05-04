@@ -337,11 +337,10 @@ Casos de uso implementados:
 
 ## Advertencias tecnicas conocidas
 
-- CU16 usa heuristicas internas provisionales, sin IA externa real.
-- CU17 usa heuristicas internas provisionales, sin modelo predictivo externo real.
-- CU18 registra notificaciones de forma interna y provisional; no integra email, WhatsApp ni SMS.
-- CU19 exporta PDF de forma provisional y no genera archivo fisico.
-- CU07 persiste `ContratoDetalle` en esquema, pero el flujo actual de alta/modificacion se concentra en el contrato principal y en el calculo del costo total.
+- CU16 puede usar Gemini API vía Google AI Studio cuando AI_ENABLED=true; si está deshabilitado o falla, usa fallback heurístico seguro.
+- CU17 puede usar Gemini API vía Google AI Studio cuando AI_ENABLED=true; si está deshabilitado o falla, usa fallback heurístico seguro. Ambas integraciones de IA (CU16 y CU17) comparten las mismas variables de entorno.
+- CU18 soporta notificaciones internas y envío por email vía SMTP configurable. WhatsApp/SMS quedan pendientes.
+- CU19 genera archivos PDF reales en REPORTS_DIR (almacenamiento local por ahora) y guarda la ruta en rutaArchivoPdf. En producción podría reemplazarse por un almacenamiento en la nube (S3, etc).
 - La disponibilidad de CU08 considera asignaciones y tareas existentes, pero aun no modela jornadas laborales, feriados, vacaciones, capacidad parcial por dia ni ownership por proyecto/recurso.
 - CU15 no tiene estado parcial de orden porque `EstadoOrdenCompra` solo define `BORRADOR`, `EMITIDA`, `RECIBIDA` y `CANCELADA`.
 

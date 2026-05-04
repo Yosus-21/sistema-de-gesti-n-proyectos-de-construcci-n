@@ -12,6 +12,8 @@ import {
   type MaterialRepository,
   type PronosticoMaterialRepository,
   type ProyectoRepository,
+  AI_MATERIAL_FORECAST_PORT,
+  type AiMaterialForecastPort,
 } from '../../../infrastructure';
 import { GenerarPronosticoMaterialDto } from '../dto';
 
@@ -24,6 +26,8 @@ export class GenerarPronosticoMaterialUseCase {
     private readonly proyectoRepository: ProyectoRepository,
     @Inject(MATERIAL_REPOSITORY)
     private readonly materialRepository: MaterialRepository,
+    @Inject(AI_MATERIAL_FORECAST_PORT)
+    private readonly aiMaterialForecastPort: AiMaterialForecastPort,
   ) {}
 
   async execute(
@@ -48,67 +52,53 @@ export class GenerarPronosticoMaterialUseCase {
       );
     }
 
-    if (dto.stockMinimo < 0 || dto.stockMaximo < 0) {
-      throw new BadRequestException(
-        'Los valores de stock mínimo y stock máximo no pueden ser negativos.',
-      );
+    if (dto.stockMinimo !== undefined && dto.stockMaximo !== undefined) {
+      if (dto.stockMinimo < 0 || dto.stockMaximo < 0) {
+        throw new BadRequestException(
+          'Los valores de stock mínimo y stock máximo no pueden ser negativos.',
+        );
+      }
+      if (dto.stockMaximo < dto.stockMinimo) {
+        throw new BadRequestException(
+          'El stock máximo no puede ser menor que el stock mínimo.',
+        );
+      }
     }
 
-    if (dto.stockMaximo < dto.stockMinimo) {
-      throw new BadRequestException(
-        'El stock máximo no puede ser menor que el stock mínimo.',
-      );
-    }
+    const forecastResult =
+      await this.aiMaterialForecastPort.generateMaterialForecast({
+        idProyecto: dto.idProyecto,
+        material: material
+          ? {
+              idMaterial: material.idMaterial as number,
+              nombre: material.nombre,
+              tipoMaterial: material.tipoMaterial,
+              cantidadDisponible: material.cantidadDisponible,
+              costoUnitario: material.costoUnitario,
+            }
+          : undefined,
+        periodoAnalisis: dto.periodoAnalisis,
+        stockMinimo: dto.stockMinimo,
+        stockMaximo: dto.stockMaximo,
+        observaciones: dto.observaciones,
+      });
 
-    // IA provisional: el pronóstico actual usa una heurística local y no integra servicios externos.
-    // La arquitectura permite reemplazar este cálculo por un puerto/interfaz hacia un motor de IA futuro.
-    const nivelConfianza = this.calcularNivelConfianzaHeuristico(
-      material?.cantidadDisponible,
-      dto.stockMinimo,
-      dto.stockMaximo,
-    );
+    const observacionesBase = dto.observaciones
+      ? `${dto.observaciones} | `
+      : '';
+    const justificacionCompleta = `${observacionesBase}${forecastResult.justificacion}`;
 
     const pronostico = new PronosticoMaterial({
       idProyecto: dto.idProyecto,
       idMaterial: dto.idMaterial,
       periodoAnalisis: dto.periodoAnalisis,
-      stockMinimo: dto.stockMinimo,
-      stockMaximo: dto.stockMaximo,
+      stockMinimo: forecastResult.stockMinimo,
+      stockMaximo: forecastResult.stockMaximo,
       fechaGeneracion: new Date(),
-      nivelConfianza,
-      observaciones:
-        dto.observaciones ??
-        'Pronóstico generado con heurística provisional de IA para planificación de materiales.',
+      nivelConfianza: forecastResult.nivelConfianza,
+      observaciones: justificacionCompleta,
     });
 
     return this.pronosticoMaterialRepository.create(pronostico);
-  }
-
-  private calcularNivelConfianzaHeuristico(
-    cantidadDisponible: number | undefined,
-    stockMinimo: number,
-    stockMaximo: number,
-  ): number {
-    // Heurística intencionalmente simple para esta fase; no representa un modelo predictivo externo real.
-    if (cantidadDisponible === undefined) {
-      return 70;
-    }
-
-    if (
-      cantidadDisponible >= stockMinimo &&
-      cantidadDisponible <= stockMaximo
-    ) {
-      return 85;
-    }
-
-    if (cantidadDisponible < stockMinimo) {
-      return 60;
-    }
-
-    if (cantidadDisponible > stockMaximo) {
-      return 75;
-    }
-
-    return 70;
   }
 }

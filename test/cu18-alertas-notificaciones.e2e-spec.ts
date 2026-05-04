@@ -429,6 +429,34 @@ describe('CU18 Alertas y Notificaciones (e2e)', () => {
       });
 
     await api
+      .post(`/cu18/alertas-notificaciones/${alertaCreadaId}/notificar`)
+      .send({
+        mensajeNotificacion: 'Notificación por email test',
+        metodoNotificacion: MetodoNotificacion.EMAIL,
+        correoDestino: 'test@example.com',
+      })
+      .expect((res) => {
+        if (res.status !== 201) console.log(res.body);
+      })
+      .expect(201)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          success: true,
+          timestamp: expectAnyString(),
+          data: expectObjectContaining({
+            idAlerta: alertaCreadaId,
+            notificada: true,
+            metodoNotificacion: MetodoNotificacion.EMAIL,
+            mensajeNotificacion: 'Notificación por email test',
+            envioEmail: expectObjectContaining({
+              sent: false,
+              provider: 'disabled',
+            }),
+          }),
+        });
+      });
+
+    await api
       .patch(`/cu18/alertas-notificaciones/${alertaCreadaId}/desactivar`)
       .expect(200)
       .expect(({ body }) => {

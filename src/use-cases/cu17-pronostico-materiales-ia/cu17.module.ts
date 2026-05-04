@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RepositoriesModule } from '../../infrastructure';
+import { RepositoriesModule, AiModule } from '../../infrastructure';
 import { PronosticoMaterialesIaController } from './pronostico-materiales-ia.controller';
 import { PronosticoMaterialesIaService } from './pronostico-materiales-ia.service';
 import {
@@ -11,7 +11,7 @@ import {
 } from './handlers';
 
 @Module({
-  imports: [RepositoriesModule],
+  imports: [RepositoriesModule, AiModule],
   controllers: [PronosticoMaterialesIaController],
   providers: [
     PronosticoMaterialesIaService,

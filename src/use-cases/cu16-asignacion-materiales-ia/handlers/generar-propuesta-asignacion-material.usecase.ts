@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AsignacionMaterial, EstadoAsignacion } from '../../../domain';
 import {
   ASIGNACION_MATERIAL_REPOSITORY,
@@ -14,6 +9,8 @@ import {
   type MaterialRepository,
   type ProyectoRepository,
   type TareaRepository,
+  AI_MATERIAL_ASSIGNMENT_PORT,
+  type AiMaterialAssignmentPort,
 } from '../../../infrastructure';
 import { GenerarPropuestaAsignacionMaterialDto } from '../dto';
 
@@ -28,6 +25,8 @@ export class GenerarPropuestaAsignacionMaterialUseCase {
     private readonly tareaRepository: TareaRepository,
     @Inject(MATERIAL_REPOSITORY)
     private readonly materialRepository: MaterialRepository,
+    @Inject(AI_MATERIAL_ASSIGNMENT_PORT)
+    private readonly aiMaterialAssignmentPort: AiMaterialAssignmentPort,
   ) {}
 
   async execute(
@@ -54,30 +53,26 @@ export class GenerarPropuestaAsignacionMaterialUseCase {
     }
 
     const materiales = await this.materialRepository.findMany();
-    // IA provisional: hoy la propuesta se resuelve con una heurística interna.
-    // En una fase futura este bloque puede delegarse a un puerto/interfaz hacia un servicio externo de IA.
-    const materialesDisponibles = materiales
-      .filter((material) => material.cantidadDisponible > 0)
-      .filter((material) =>
-        dto.costoMaximoPermitido !== undefined
-          ? material.costoUnitario <= dto.costoMaximoPermitido
-          : true,
-      )
-      .sort((a, b) => b.cantidadDisponible - a.cantidadDisponible);
+    const materialesDisponibles = materiales.map((m) => ({
+      idMaterial: m.idMaterial as number,
+      nombre: m.nombre,
+      cantidadDisponible: m.cantidadDisponible,
+      costoUnitario: m.costoUnitario,
+    }));
 
-    if (materialesDisponibles.length === 0) {
-      throw new BadRequestException(
-        'No hay materiales disponibles que cumplan los criterios indicados.',
-      );
-    }
-
-    const materialCandidato = materialesDisponibles[0];
-    const cantidadAsignada = Math.min(materialCandidato.cantidadDisponible, 1);
+    const recomendacion =
+      await this.aiMaterialAssignmentPort.generateMaterialAssignment({
+        idProyecto: dto.idProyecto,
+        idTarea: dto.idTarea,
+        materialesDisponibles,
+        restricciones: dto.restricciones,
+        costoMaximoPermitido: dto.costoMaximoPermitido,
+      });
 
     const asignacion = new AsignacionMaterial({
       idTarea: dto.idTarea,
-      idMaterial: materialCandidato.idMaterial,
-      cantidadAsignada,
+      idMaterial: recomendacion.idMaterial,
+      cantidadAsignada: recomendacion.cantidadSugerida,
       fechaAsignacion: new Date(),
       criteriosPrioridad: dto.criteriosPrioridad,
       costoMaximoPermitido: dto.costoMaximoPermitido,

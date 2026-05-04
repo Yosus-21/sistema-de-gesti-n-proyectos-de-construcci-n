@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Contrato as PrismaContratoRecord } from '@prisma/client';
-import { Contrato } from '../../../domain';
+import {
+  Prisma,
+  Contrato as PrismaContratoRecord,
+  ContratoDetalle as PrismaContratoDetalleRecord,
+} from '@prisma/client';
+import { Contrato, ContratoDetalle } from '../../../domain';
 import { PrismaService } from '../../prisma';
 import {
   ContratoRepository,
@@ -18,8 +22,23 @@ export class PrismaContratoRepository
   }
 
   async create(data: Contrato): Promise<Contrato> {
+    const { detalles, ...restData } = data;
     const record = await this.prisma.contrato.create({
-      data: this.toCreatePersistence(data),
+      data: {
+        ...this.toCreatePersistence(restData as Contrato),
+        ...(detalles && detalles.length > 0
+          ? {
+              detalles: {
+                create: detalles.map((d) => ({
+                  cantidadPersonas: d.cantidadPersonas,
+                  costoUnitarioPorDia: d.costoUnitarioPorDia,
+                  idCargo: d.idCargo,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: { detalles: true },
     });
 
     return this.toDomain(record);
@@ -28,6 +47,7 @@ export class PrismaContratoRepository
   async findById(idContrato: number): Promise<Contrato | null> {
     const record = await this.prisma.contrato.findUnique({
       where: { idContrato },
+      include: { detalles: true },
     });
 
     return record ? this.toDomain(record) : null;
@@ -55,12 +75,31 @@ export class PrismaContratoRepository
   }
 
   async update(idContrato: number, data: Partial<Contrato>): Promise<Contrato> {
-    const record = await this.prisma.contrato.update({
-      where: { idContrato },
-      data: this.toUpdatePersistence(data),
-    });
+    const { detalles, ...restData } = data;
 
-    return this.toDomain(record);
+    return this.prisma.$transaction(async (tx) => {
+      if (detalles) {
+        await tx.contratoDetalle.deleteMany({ where: { idContrato } });
+        if (detalles.length > 0) {
+          await tx.contratoDetalle.createMany({
+            data: detalles.map((d) => ({
+              idContrato,
+              cantidadPersonas: d.cantidadPersonas,
+              costoUnitarioPorDia: d.costoUnitarioPorDia,
+              idCargo: d.idCargo,
+            })),
+          });
+        }
+      }
+
+      const record = await tx.contrato.update({
+        where: { idContrato },
+        data: this.toUpdatePersistence(restData),
+        include: { detalles: true },
+      });
+
+      return this.toDomain(record);
+    });
   }
 
   async delete(idContrato: number): Promise<void> {
@@ -69,7 +108,9 @@ export class PrismaContratoRepository
     });
   }
 
-  private toDomain(record: PrismaContratoRecord): Contrato {
+  private toDomain(
+    record: PrismaContratoRecord & { detalles?: PrismaContratoDetalleRecord[] },
+  ): Contrato {
     return new Contrato({
       idContrato: record.idContrato,
       fechaInicio: record.fechaInicio,
@@ -80,6 +121,18 @@ export class PrismaContratoRepository
       estadoContrato: record.estadoContrato,
       idProyecto: record.idProyecto ?? undefined,
       idContratista: record.idContratista ?? undefined,
+      detalles: record.detalles
+        ? record.detalles.map(
+            (d) =>
+              new ContratoDetalle({
+                idContratoDetalle: d.idContratoDetalle,
+                cantidadPersonas: d.cantidadPersonas,
+                costoUnitarioPorDia: d.costoUnitarioPorDia,
+                idContrato: d.idContrato ?? undefined,
+                idCargo: d.idCargo ?? undefined,
+              }),
+          )
+        : undefined,
     });
   }
 

@@ -80,7 +80,7 @@ export class AsignacionMaterialesIaController {
   @ApiOperation({
     summary: 'Generar propuesta de asignación de materiales',
     description:
-      'Actualmente usa una heurística interna provisional y no integra IA externa real.',
+      'Genera una propuesta. Si AI_ENABLED=true, usa Google AI Studio (Gemini). Si AI_ENABLED=false o la IA falla, usa un fallback heurístico interno seguro. Nunca se exponen API keys.',
   })
   @ApiEnvelopeCreated('Propuesta generada correctamente.')
   @Post('propuestas')

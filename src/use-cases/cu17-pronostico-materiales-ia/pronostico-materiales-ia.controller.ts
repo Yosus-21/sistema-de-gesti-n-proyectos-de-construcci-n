@@ -80,7 +80,7 @@ export class PronosticoMaterialesIaController {
   @ApiOperation({
     summary: 'Generar pronóstico de materiales',
     description:
-      'Actualmente usa una heurística interna provisional y no integra IA externa real.',
+      'Si AI_ENABLED=true, usa Google AI Studio (Gemini API). Si está deshabilitado o falla, usa un fallback heurístico seguro. Nunca expone API keys.',
   })
   @ApiEnvelopeCreated('Pronóstico generado correctamente.')
   @Post()

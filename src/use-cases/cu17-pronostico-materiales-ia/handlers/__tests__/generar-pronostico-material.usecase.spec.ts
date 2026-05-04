@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   EstadoProyecto,
@@ -10,6 +11,7 @@ import type {
   MaterialRepository,
   PronosticoMaterialRepository,
   ProyectoRepository,
+  AiMaterialForecastPort,
 } from '../../../../infrastructure';
 import { GenerarPronosticoMaterialDto } from '../../dto';
 import { GenerarPronosticoMaterialUseCase } from '../generar-pronostico-material.usecase';
@@ -19,6 +21,7 @@ describe('GenerarPronosticoMaterialUseCase', () => {
   let pronosticoMaterialRepositoryMock: jest.Mocked<PronosticoMaterialRepository>;
   let proyectoRepositoryMock: jest.Mocked<ProyectoRepository>;
   let materialRepositoryMock: jest.Mocked<MaterialRepository>;
+  let aiMaterialForecastPortMock: jest.Mocked<AiMaterialForecastPort>;
 
   const dtoBase: GenerarPronosticoMaterialDto = {
     idProyecto: 5,
@@ -77,10 +80,15 @@ describe('GenerarPronosticoMaterialUseCase', () => {
       existsByNombreExcludingId: jest.fn(),
     };
 
+    aiMaterialForecastPortMock = {
+      generateMaterialForecast: jest.fn(),
+    };
+
     useCase = new GenerarPronosticoMaterialUseCase(
       pronosticoMaterialRepositoryMock,
       proyectoRepositoryMock,
       materialRepositoryMock,
+      aiMaterialForecastPortMock,
     );
   });
 
@@ -98,10 +106,25 @@ describe('GenerarPronosticoMaterialUseCase', () => {
     });
 
     proyectoRepositoryMock.findById.mockResolvedValue(proyectoExistente);
+    aiMaterialForecastPortMock.generateMaterialForecast.mockResolvedValue({
+      stockMinimo: dtoBase.stockMinimo,
+      stockMaximo: dtoBase.stockMaximo,
+      nivelConfianza: 70,
+      riesgo: 'MEDIO',
+      justificacion: 'Pronóstico heurístico',
+      provider: 'heuristic',
+    });
     pronosticoMaterialRepositoryMock.create.mockResolvedValue(pronosticoCreado);
 
     const result = await useCase.execute(dtoBase);
 
+    expect(
+      aiMaterialForecastPortMock.generateMaterialForecast,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idProyecto: dtoBase.idProyecto,
+      }),
+    );
     expect(pronosticoMaterialRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         idProyecto: dtoBase.idProyecto,
@@ -109,6 +132,7 @@ describe('GenerarPronosticoMaterialUseCase', () => {
         stockMinimo: dtoBase.stockMinimo,
         stockMaximo: dtoBase.stockMaximo,
         nivelConfianza: 70,
+        observaciones: 'Pronóstico heurístico',
       }),
     );
     expect(result).toBe(pronosticoCreado);
@@ -129,6 +153,14 @@ describe('GenerarPronosticoMaterialUseCase', () => {
 
     proyectoRepositoryMock.findById.mockResolvedValue(proyectoExistente);
     materialRepositoryMock.findById.mockResolvedValue(materialExistente);
+    aiMaterialForecastPortMock.generateMaterialForecast.mockResolvedValue({
+      stockMinimo: dtoBase.stockMinimo,
+      stockMaximo: dtoBase.stockMaximo,
+      nivelConfianza: 85,
+      riesgo: 'BAJO',
+      justificacion: 'Stock suficiente',
+      provider: 'google-gemini',
+    });
     pronosticoMaterialRepositoryMock.create.mockResolvedValue(pronosticoCreado);
 
     const result = await useCase.execute({
@@ -140,11 +172,14 @@ describe('GenerarPronosticoMaterialUseCase', () => {
     expect(materialRepositoryMock.findById).toHaveBeenCalledWith(
       materialExistente.idMaterial,
     );
+    expect(
+      aiMaterialForecastPortMock.generateMaterialForecast,
+    ).toHaveBeenCalled();
     expect(pronosticoMaterialRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         idMaterial: materialExistente.idMaterial,
         nivelConfianza: 85,
-        observaciones: 'Observación manual',
+        observaciones: 'Observación manual | Stock suficiente',
       }),
     );
     expect(result).toBe(pronosticoCreado);

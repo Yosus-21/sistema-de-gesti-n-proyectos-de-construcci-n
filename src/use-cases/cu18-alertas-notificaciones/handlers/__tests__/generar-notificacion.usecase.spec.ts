@@ -5,7 +5,10 @@ import {
   MetodoNotificacion,
   TipoAlerta,
 } from '../../../../domain';
-import type { AlertaRepository } from '../../../../infrastructure';
+import type {
+  AlertaRepository,
+  NotificationPort,
+} from '../../../../infrastructure';
 import { GenerarNotificacionDto } from '../../dto';
 import { GenerarNotificacionUseCase } from '../generar-notificacion.usecase';
 import { expectAnyDate } from '../../../../test-utils/typed-matchers';
@@ -13,6 +16,7 @@ import { expectAnyDate } from '../../../../test-utils/typed-matchers';
 describe('GenerarNotificacionUseCase', () => {
   let useCase: GenerarNotificacionUseCase;
   let alertaRepositoryMock: jest.Mocked<AlertaRepository>;
+  let notificationPortMock: jest.Mocked<NotificationPort>;
 
   const dtoBase: GenerarNotificacionDto = {
     idAlerta: 16,
@@ -29,7 +33,14 @@ describe('GenerarNotificacionUseCase', () => {
       delete: jest.fn(),
     };
 
-    useCase = new GenerarNotificacionUseCase(alertaRepositoryMock);
+    notificationPortMock = {
+      sendEmail: jest.fn(),
+    };
+
+    useCase = new GenerarNotificacionUseCase(
+      alertaRepositoryMock,
+      notificationPortMock,
+    );
   });
 
   it('genera notificación provisional correctamente', async () => {
@@ -89,5 +100,66 @@ describe('GenerarNotificacionUseCase', () => {
     await expect(useCase.execute(dtoBase)).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+
+  it('EMAIL con correoDestino llama NotificationPort', async () => {
+    const alertaExistente = new Alerta({
+      idAlerta: 16,
+      criterioActivacion: 'Stock',
+      tipoAlerta: TipoAlerta.MATERIAL_BAJO,
+      estadoAlerta: EstadoAlerta.ACTIVA,
+    });
+
+    alertaRepositoryMock.findById.mockResolvedValue(alertaExistente);
+    alertaRepositoryMock.update.mockResolvedValue(alertaExistente);
+
+    notificationPortMock.sendEmail.mockResolvedValue({
+      sent: true,
+      provider: 'smtp',
+      messageId: '12345',
+    });
+
+    const result = await useCase.execute({
+      ...dtoBase,
+      metodoNotificacion: MetodoNotificacion.EMAIL,
+      correoDestino: 'test@example.com',
+    });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(notificationPortMock.sendEmail).toHaveBeenCalledWith({
+      to: 'test@example.com',
+      subject: 'SuArq Alerta: MATERIAL_BAJO',
+      message: 'Aviso interno',
+    });
+    expect(result.envioEmail).toEqual({
+      sent: true,
+      provider: 'smtp',
+      messageId: '12345',
+    });
+  });
+
+  it('EMAIL sin correoDestino no rompe y retorna reason', async () => {
+    const alertaExistente = new Alerta({
+      idAlerta: 16,
+      criterioActivacion: 'Stock',
+      tipoAlerta: TipoAlerta.MATERIAL_BAJO,
+      estadoAlerta: EstadoAlerta.ACTIVA,
+    });
+
+    alertaRepositoryMock.findById.mockResolvedValue(alertaExistente);
+    alertaRepositoryMock.update.mockResolvedValue(alertaExistente);
+
+    const result = await useCase.execute({
+      ...dtoBase,
+      metodoNotificacion: MetodoNotificacion.EMAIL,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(notificationPortMock.sendEmail).not.toHaveBeenCalled();
+    expect(result.envioEmail).toEqual({
+      sent: false,
+      provider: 'none',
+      reason: 'No se proporcionó correoDestino para enviar la notificación.',
+    });
   });
 });

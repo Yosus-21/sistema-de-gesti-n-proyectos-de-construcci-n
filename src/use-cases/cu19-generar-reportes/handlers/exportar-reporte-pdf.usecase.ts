@@ -2,6 +2,8 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   REPORTE_REPOSITORY,
   type ReporteRepository,
+  REPORT_PDF_PORT,
+  type ReportPdfPort,
 } from '../../../infrastructure';
 import { ExportarReportePdfDto } from '../dto';
 
@@ -10,6 +12,8 @@ export class ExportarReportePdfUseCase {
   constructor(
     @Inject(REPORTE_REPOSITORY)
     private readonly reporteRepository: ReporteRepository,
+    @Inject(REPORT_PDF_PORT)
+    private readonly reportPdfPort: ReportPdfPort,
   ) {}
 
   async execute(dto: ExportarReportePdfDto): Promise<{
@@ -17,6 +21,7 @@ export class ExportarReportePdfUseCase {
     exportado: true;
     rutaArchivoPdf: string;
     mensaje: string;
+    generadoFisicamente: boolean;
   }> {
     const reporte = await this.reporteRepository.findById(dto.idReporte);
 
@@ -26,18 +31,27 @@ export class ExportarReportePdfUseCase {
       );
     }
 
-    const rutaArchivoPdf = `reports/reporte-${dto.idReporte}.pdf`;
+    const { relativePath } = await this.reportPdfPort.generateReportPdf({
+      idReporte: reporte.idReporte as number,
+      tipoReporte: reporte.tipoReporte,
+      fechaGeneracion: reporte.fechaGeneracion,
+      fechaInicioPeriodo: reporte.fechaInicioPeriodo,
+      fechaFinPeriodo: reporte.fechaFinPeriodo,
+      porcentajeAvanceGeneral: reporte.porcentajeAvanceGeneral,
+      contenidoResumen: reporte.contenidoResumen,
+      idProyecto: reporte.idProyecto,
+    });
 
     await this.reporteRepository.update(dto.idReporte, {
-      rutaArchivoPdf,
+      rutaArchivoPdf: relativePath,
     });
 
     return {
       idReporte: dto.idReporte,
       exportado: true,
-      rutaArchivoPdf,
-      mensaje:
-        'Exportación PDF provisional. No se generó archivo físico en esta fase.',
+      rutaArchivoPdf: relativePath,
+      generadoFisicamente: true,
+      mensaje: 'Reporte PDF generado correctamente.',
     };
   }
 }

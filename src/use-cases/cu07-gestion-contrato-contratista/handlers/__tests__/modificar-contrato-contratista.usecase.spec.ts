@@ -69,6 +69,83 @@ describe('ModificarContratoContratistaUseCase', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('lanza BadRequestException si detalles tienen cantidadPersonas <= 0', async () => {
+    contratoRepositoryMock.findById.mockResolvedValue(contratoBase);
+
+    await expect(
+      useCase.execute({
+        idContrato: 12,
+        detalles: [
+          {
+            idCargo: 1,
+            cantidadPersonas: 0,
+            costoUnitarioPorDia: 100,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('lanza BadRequestException si detalles tienen costoUnitario < 0', async () => {
+    contratoRepositoryMock.findById.mockResolvedValue(contratoBase);
+
+    await expect(
+      useCase.execute({
+        idContrato: 12,
+        detalles: [
+          {
+            idCargo: 1,
+            cantidadPersonas: 2,
+            costoUnitarioPorDia: -50,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('reemplaza detalles y recalcula costoTotal si llegan detalles válidos', async () => {
+    contratoRepositoryMock.findById.mockResolvedValue(contratoBase);
+
+    // 5 días de contrato (del 1 al 6 son 5 días)
+    // 3 personas * 100/día = 300/día
+    // 5 días * 300 = 1500 total
+    const nuevoCostoTotal = 1500;
+
+    contratoRepositoryMock.update.mockResolvedValue(
+      new Contrato({
+        ...contratoBase,
+        costoTotal: nuevoCostoTotal,
+      }),
+    );
+
+    const result = await useCase.execute({
+      idContrato: 12,
+      detalles: [
+        {
+          idCargo: 1,
+          cantidadPersonas: 3,
+          costoUnitarioPorDia: 100,
+        },
+      ],
+    });
+
+    expect(contratoRepositoryMock.update).toHaveBeenCalledWith(
+      12,
+      expect.objectContaining({
+        costoTotal: 1500,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        detalles: expect.arrayContaining([
+          expect.objectContaining({
+            cantidadPersonas: 3,
+            costoUnitarioPorDia: 100,
+            idCargo: 1,
+          }),
+        ]),
+      }),
+    );
+    expect(result.idContrato).toBe(12);
+  });
+
   it('lanza BadRequestException si fechas quedan inconsistentes', async () => {
     contratoRepositoryMock.findById.mockResolvedValue(contratoBase);
 

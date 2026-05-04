@@ -15,6 +15,8 @@ import {
   createAuthorizedRequest,
   getAdminAuthHeaders,
 } from './helpers/auth-e2e.helper';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
   let app: INestApplication<App>;
@@ -299,6 +301,8 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
         });
       });
 
+    let pdfPath = '';
+
     await api
       .patch(`/cu19/reportes/${reporteProyectoId}/exportar-pdf`)
       .expect(200)
@@ -309,11 +313,14 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
           data: {
             idReporte: reporteProyectoId,
             exportado: true,
-            rutaArchivoPdf: `reports/reporte-${reporteProyectoId}.pdf`,
-            mensaje:
-              'Exportación PDF provisional. No se generó archivo físico en esta fase.',
+            rutaArchivoPdf: expectAnyString(),
+            generadoFisicamente: true,
+            mensaje: 'Reporte PDF generado correctamente.',
           },
         });
+        pdfPath = String(
+          (body as { data: { rutaArchivoPdf: string } }).data.rutaArchivoPdf,
+        );
       });
 
     const reporteActualizado = await prismaService.reporte.findUnique({
@@ -322,9 +329,15 @@ describe('CU19 Generacion y Consulta de Reportes (e2e)', () => {
       },
     });
 
-    expect(reporteActualizado?.rutaArchivoPdf).toBe(
-      `reports/reporte-${reporteProyectoId}.pdf`,
-    );
+    expect(reporteActualizado?.rutaArchivoPdf).toBe(pdfPath);
+    expect(
+      fs.existsSync(
+        path.resolve(
+          process.env.REPORTS_DIR || 'reports',
+          path.basename(pdfPath),
+        ),
+      ),
+    ).toBe(true);
 
     await api
       .patch('/cu19/reportes/999999/exportar-pdf')

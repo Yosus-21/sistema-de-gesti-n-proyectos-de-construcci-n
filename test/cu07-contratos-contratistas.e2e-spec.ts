@@ -242,12 +242,10 @@ describe('CU07 Gestion de Contrato con Contratista (e2e)', () => {
         terminosYCondiciones: 'Pago semanal',
         detalles: [
           {
-            idCargo: 1,
             cantidadPersonas: 2,
             costoUnitarioPorDia: 100,
           },
           {
-            idCargo: 2,
             cantidadPersonas: 1,
             costoUnitarioPorDia: 50,
           },
@@ -376,6 +374,17 @@ describe('CU07 Gestion de Contrato con Contratista (e2e)', () => {
             idProyecto: proyectoPruebaId,
             idContratista: contratistaPruebaId,
             estadoContrato: 'VIGENTE',
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            detalles: expect.arrayContaining([
+              expectObjectContaining({
+                cantidadPersonas: 2,
+                costoUnitarioPorDia: 100,
+              }),
+              expectObjectContaining({
+                cantidadPersonas: 1,
+                costoUnitarioPorDia: 50,
+              }),
+            ]),
           }),
         });
       });
@@ -386,6 +395,12 @@ describe('CU07 Gestion de Contrato con Contratista (e2e)', () => {
         metodoPago: 'Cheque',
         terminosYCondiciones: 'Pago quincenal',
         fechaFin: '2026-05-08T00:00:00.000Z',
+        detalles: [
+          {
+            cantidadPersonas: 3,
+            costoUnitarioPorDia: 100,
+          },
+        ],
       })
       .expect(200)
       .expect(({ body }) => {
@@ -396,6 +411,7 @@ describe('CU07 Gestion de Contrato con Contratista (e2e)', () => {
             idContrato: contratoCreadoId,
             metodoPago: 'Cheque',
             terminosYCondiciones: 'Pago quincenal',
+            costoTotal: 2100, // 7 days * (3 * 100) = 2100
           }),
         });
       });
@@ -409,7 +425,7 @@ describe('CU07 Gestion de Contrato con Contratista (e2e)', () => {
           timestamp: expectAnyString(),
           data: {
             idContrato: contratoCreadoId,
-            costoTotal: 1250,
+            costoTotal: 2100,
           },
         });
       });

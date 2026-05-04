@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-assignment */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
   AsignacionMaterial,
@@ -14,9 +15,9 @@ import {
 } from '../../../../domain';
 import type {
   AsignacionMaterialRepository,
-  MaterialRepository,
   ProyectoRepository,
   TareaRepository,
+  AiMaterialAssignmentPort,
 } from '../../../../infrastructure';
 import { GenerarPropuestaAsignacionMaterialDto } from '../../dto';
 import { GenerarPropuestaAsignacionMaterialUseCase } from '../generar-propuesta-asignacion-material.usecase';
@@ -27,6 +28,7 @@ describe('GenerarPropuestaAsignacionMaterialUseCase', () => {
   let proyectoRepositoryMock: jest.Mocked<ProyectoRepository>;
   let tareaRepositoryMock: jest.Mocked<TareaRepository>;
   let materialRepositoryMock: jest.Mocked<MaterialRepository>;
+  let aiMaterialAssignmentPortMock: jest.Mocked<AiMaterialAssignmentPort>;
 
   const dtoBase: GenerarPropuestaAsignacionMaterialDto = {
     idProyecto: 4,
@@ -118,11 +120,16 @@ describe('GenerarPropuestaAsignacionMaterialUseCase', () => {
       existsByNombreExcludingId: jest.fn(),
     };
 
+    aiMaterialAssignmentPortMock = {
+      generateMaterialAssignment: jest.fn(),
+    };
+
     useCase = new GenerarPropuestaAsignacionMaterialUseCase(
       asignacionMaterialRepositoryMock,
       proyectoRepositoryMock,
       tareaRepositoryMock,
       materialRepositoryMock,
+      aiMaterialAssignmentPortMock,
     );
   });
 
@@ -146,11 +153,30 @@ describe('GenerarPropuestaAsignacionMaterialUseCase', () => {
       materialBarato,
       materialCostoso,
     ]);
+
+    aiMaterialAssignmentPortMock.generateMaterialAssignment.mockResolvedValue({
+      idMaterial: materialBarato.idMaterial,
+      cantidadSugerida: 1,
+      costoEstimado: 12,
+      nivelConfianza: 90,
+      justificacion: 'Simulado',
+      provider: 'test',
+    });
+
     asignacionMaterialRepositoryMock.create.mockResolvedValue(asignacionCreada);
 
     const result = await useCase.execute(dtoBase);
 
     expect(materialRepositoryMock.findMany).toHaveBeenCalledWith();
+    expect(
+      aiMaterialAssignmentPortMock.generateMaterialAssignment,
+    ).toHaveBeenCalledWith({
+      idProyecto: 4,
+      idTarea: 8,
+      materialesDisponibles: expect.any(Array),
+      costoMaximoPermitido: 20,
+      restricciones: 'sin desperdicio',
+    });
     expect(asignacionMaterialRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         idTarea: dtoBase.idTarea,
@@ -198,6 +224,10 @@ describe('GenerarPropuestaAsignacionMaterialUseCase', () => {
       }),
     ]);
 
+    aiMaterialAssignmentPortMock.generateMaterialAssignment.mockRejectedValue(
+      new BadRequestException(),
+    );
+
     await expect(useCase.execute(dtoBase)).rejects.toBeInstanceOf(
       BadRequestException,
     );
@@ -219,6 +249,16 @@ describe('GenerarPropuestaAsignacionMaterialUseCase', () => {
       materialCostoso,
       materialBarato,
     ]);
+
+    aiMaterialAssignmentPortMock.generateMaterialAssignment.mockResolvedValue({
+      idMaterial: materialBarato.idMaterial,
+      cantidadSugerida: 1,
+      costoEstimado: 12,
+      nivelConfianza: 90,
+      justificacion: 'Simulado',
+      provider: 'test',
+    });
+
     asignacionMaterialRepositoryMock.create.mockResolvedValue(asignacionCreada);
 
     await useCase.execute(dtoBase);

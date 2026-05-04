@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RepositoriesModule } from '../../infrastructure';
+import { RepositoriesModule, NotificationsModule } from '../../infrastructure';
 import { AlertasNotificacionesController } from './alertas-notificaciones.controller';
 import { AlertasNotificacionesService } from './alertas-notificaciones.service';
 import {
@@ -12,7 +12,7 @@ import {
 } from './handlers';
 
 @Module({
-  imports: [RepositoriesModule],
+  imports: [RepositoriesModule, NotificationsModule],
   controllers: [AlertasNotificacionesController],
   providers: [
     AlertasNotificacionesService,

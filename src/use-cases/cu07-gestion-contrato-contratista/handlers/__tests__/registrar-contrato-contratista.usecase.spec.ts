@@ -198,4 +198,54 @@ describe('RegistrarContratoContratistaUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('lanza BadRequestException si cantidadPersonas es <= 0', async () => {
+    proyectoRepositoryMock.findById.mockResolvedValue(
+      new Proyecto({
+        idProyecto: 10,
+        estadoProyecto: EstadoProyecto.PLANIFICACION,
+      }),
+    );
+    contratistaRepositoryMock.findById.mockResolvedValue(
+      new Contratista({ idContratista: 22 }),
+    );
+
+    await expect(
+      useCase.execute({
+        ...dtoBase,
+        detalles: [
+          {
+            idCargo: 1,
+            cantidadPersonas: 0,
+            costoUnitarioPorDia: 100,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('lanza BadRequestException si costoUnitarioPorDia es < 0', async () => {
+    proyectoRepositoryMock.findById.mockResolvedValue(
+      new Proyecto({
+        idProyecto: 10,
+        estadoProyecto: EstadoProyecto.PLANIFICACION,
+      }),
+    );
+    contratistaRepositoryMock.findById.mockResolvedValue(
+      new Contratista({ idContratista: 22 }),
+    );
+
+    await expect(
+      useCase.execute({
+        ...dtoBase,
+        detalles: [
+          {
+            idCargo: 1,
+            cantidadPersonas: 2,
+            costoUnitarioPorDia: -10,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
 });

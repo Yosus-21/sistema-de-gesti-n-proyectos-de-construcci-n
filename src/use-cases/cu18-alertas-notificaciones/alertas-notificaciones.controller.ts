@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 import { JwtAuthGuard, Public, Roles, RolesGuard } from '../../auth';
 import { MetodoNotificacion, RolUsuario } from '../../domain';
 import { AlertasNotificacionesService } from './alertas-notificaciones.service';
@@ -44,6 +44,14 @@ class GenerarNotificacionBodyDto implements Omit<
   @IsEnum(MetodoNotificacion)
   @ApiPropertyOptional()
   metodoNotificacion?: MetodoNotificacion;
+
+  @IsOptional()
+  @IsEmail()
+  @ApiPropertyOptional({
+    description:
+      'Obligatorio si el método es EMAIL y el entorno tiene emails habilitados',
+  })
+  correoDestino?: string;
 }
 
 @ApiTags('CU18 - Alertas y Notificaciones')

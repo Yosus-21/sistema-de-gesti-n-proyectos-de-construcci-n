@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { MetodoNotificacion } from '../../../domain/enums';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -19,4 +26,12 @@ export class GenerarNotificacionDto {
   @IsEnum(MetodoNotificacion)
   @ApiPropertyOptional()
   metodoNotificacion?: MetodoNotificacion;
+
+  @IsOptional()
+  @IsEmail()
+  @ApiPropertyOptional({
+    description:
+      'Obligatorio si el método es EMAIL y el entorno tiene emails habilitados',
+  })
+  correoDestino?: string;
 }

@@ -1,3 +1,5 @@
+import { ContratoDetalle } from './contrato-detalle.entity';
+
 export class Contrato {
   idContrato?: number;
   fechaInicio: Date;
@@ -8,6 +10,7 @@ export class Contrato {
   estadoContrato: string;
   idProyecto?: number;
   idContratista?: number;
+  detalles?: ContratoDetalle[];
 
   constructor(data: Partial<Contrato> = {}) {
     Object.assign(this, data);

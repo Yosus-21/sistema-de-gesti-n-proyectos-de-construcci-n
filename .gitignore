@@ -17,3 +17,6 @@ Thumbs.db
 .idea/
 .vscode/
 .eslintcache
+reports/
+tmp/
+lint_output.txt

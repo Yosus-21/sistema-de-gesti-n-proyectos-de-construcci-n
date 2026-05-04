@@ -11,6 +11,7 @@
 - [ ] `JWT_SECRET` fuerte y no versionado definido para producción
 - [ ] `AUTH_REGISTER_ENABLED` definido según el entorno
 - [ ] Variables de bootstrap admin (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) definidas solo cuando se ejecute el seed
+- [ ] Variables de notificaciones email (`EMAIL_ENABLED`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_FROM`) configuradas adecuadamente
 
 ## Base de datos
 
@@ -71,6 +72,14 @@
 - [ ] Credenciales temporales de bootstrap eliminadas, rotadas o gestionadas como secreto después de usarlas
 - [ ] `CORS_ORIGIN` limitado al frontend real, sin `*` salvo excepción revisada
 - [ ] `THROTTLE_TTL` y `THROTTLE_LIMIT` ajustados al tráfico esperado
+- [ ] Si `EMAIL_ENABLED=true`, la configuración SMTP es correcta, completa y no usa placeholders.
+- [ ] Probar notificación de correo real (EMAIL) en entorno controlado.
+- [ ] Asegurarse de no subir credenciales reales de email (`EMAIL_PASSWORD`) al repositorio.
+- [ ] `REPORTS_DIR` configurado y la carpeta de reportes tiene permisos de escritura.
+- [ ] Exportación de PDF (CU19) probada y generando archivos físicos reales.
+- [ ] Almacenamiento local aceptado o reemplazado por storage externo (S3/Azure Blob) en producción.
+- [ ] Política de respaldo y limpieza de la carpeta de reportes definida para producción.
+- [ ] Integración AI verificada con Gemini y fallback heurístico funcionando (CU16 y CU17).
 - [ ] `.env` real excluido del repositorio y gestionado como secreto del entorno
 - [ ] `npm run prisma:migrate:deploy` usado para aplicar migraciones en despliegue productivo
 - [ ] Matriz RBAC revisada antes de habilitar usuarios reales
@@ -82,10 +91,8 @@
 
 ## Deudas tecnicas conocidas
 
-- [ ] CU16 IA externa pendiente
 - [ ] CU17 IA externa pendiente
-- [ ] CU18 notificacion externa real pendiente
-- [ ] CU19 generacion PDF real pendiente
+- [ ] CU18 notificacion por WhatsApp y SMS pendiente
 - [ ] RBAC por pertenencia/recurso pendiente cuando existan relaciones usuario-proyecto/contratista
 - [ ] Auditoria de permisos a nivel de datos pendiente para evitar acceso transversal entre proyectos
 - [ ] Calendario laboral avanzado pendiente para disponibilidad de trabajadores (jornadas, feriados, vacaciones, capacidad parcial)

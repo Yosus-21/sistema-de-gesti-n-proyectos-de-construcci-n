@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RepositoriesModule } from '../../infrastructure';
+import { RepositoriesModule, ReportsModule } from '../../infrastructure';
 import { GenerarReportesController } from './generar-reportes.controller';
 import { GenerarReportesService } from './generar-reportes.service';
 import {
@@ -10,7 +10,7 @@ import {
 } from './handlers';
 
 @Module({
-  imports: [RepositoriesModule],
+  imports: [RepositoriesModule, ReportsModule],
   controllers: [GenerarReportesController],
   providers: [
     GenerarReportesService,

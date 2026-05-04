@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Contrato } from '../../../domain';
+import { Contrato, ContratoDetalle } from '../../../domain';
 import {
   CONTRATO_REPOSITORY,
   type ContratoRepository,
@@ -60,6 +60,14 @@ export class ModificarContratoContratistaUseCase {
               fechaInicio,
               fechaFin,
             ),
+            detalles: dto.detalles.map(
+              (d) =>
+                new ContratoDetalle({
+                  cantidadPersonas: d.cantidadPersonas,
+                  costoUnitarioPorDia: d.costoUnitarioPorDia,
+                  idCargo: d.idCargo,
+                }),
+            ),
           }
         : {}),
     };
@@ -72,6 +80,19 @@ export class ModificarContratoContratistaUseCase {
     fechaInicio: Date,
     fechaFin: Date,
   ): number {
+    for (const detalle of detalles) {
+      if (detalle.cantidadPersonas <= 0) {
+        throw new BadRequestException(
+          'La cantidad de personas debe ser mayor a 0',
+        );
+      }
+      if (detalle.costoUnitarioPorDia < 0) {
+        throw new BadRequestException(
+          'El costo unitario debe ser mayor o igual a 0',
+        );
+      }
+    }
+
     const diasContrato = Math.max(
       1,
       Math.ceil(
