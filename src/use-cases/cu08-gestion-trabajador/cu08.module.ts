@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RepositoriesModule } from '../../infrastructure';
+import { TrabajadorDisponibilidadService } from '../shared';
 import { GestionTrabajadorController } from './gestion-trabajador.controller';
 import { GestionTrabajadorService } from './gestion-trabajador.service';
 import {
@@ -22,6 +23,7 @@ import {
     ConsultarTrabajadorUseCase,
     ListarTrabajadoresUseCase,
     VerificarDisponibilidadTrabajadorUseCase,
+    TrabajadorDisponibilidadService,
   ],
 })
 export class Cu08Module {}

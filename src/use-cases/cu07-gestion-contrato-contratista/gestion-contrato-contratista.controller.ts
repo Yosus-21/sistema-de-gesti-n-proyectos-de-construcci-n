@@ -150,7 +150,12 @@ export class GestionContratoContratistaController {
   @ApiOperation({ summary: 'Listar contratos con contratistas' })
   @ApiPaginationQueries()
   @ApiEnvelopeOk('Contratos listados correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.CONTRATISTA,
+    RolUsuario.LECTOR,
+  )
   @Get()
   listar(@Query() dto: ListarContratosContratistaDto) {
     return this.gestionContratoContratistaService.listar(dto);
@@ -159,7 +164,12 @@ export class GestionContratoContratistaController {
   @ApiOperation({ summary: 'Calcular costo de contrato' })
   @ApiNumericParam('idContrato', 'Identificador del contrato a evaluar.')
   @ApiEnvelopeOk('Costo del contrato calculado correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.CONTRATISTA,
+    RolUsuario.LECTOR,
+  )
   @Get(':idContrato/costo')
   calcularCosto(@Param('idContrato', ParseIntPipe) idContrato: number) {
     const dto: CalcularCostoContratoDto = { idContrato };
@@ -177,7 +187,12 @@ export class GestionContratoContratistaController {
       'Fecha ISO 8601 usada como referencia para validar la vigencia.',
   })
   @ApiEnvelopeOk('Vigencia del contrato validada correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.CONTRATISTA,
+    RolUsuario.LECTOR,
+  )
   @Get(':idContrato/vigencia')
   validarVigencia(
     @Param('idContrato', ParseIntPipe) idContrato: number,
@@ -194,7 +209,12 @@ export class GestionContratoContratistaController {
   @ApiOperation({ summary: 'Consultar contrato por identificador' })
   @ApiNumericParam('idContrato', 'Identificador del contrato a consultar.')
   @ApiEnvelopeOk('Contrato consultado correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.CONTRATISTA,
+    RolUsuario.LECTOR,
+  )
   @Get(':idContrato')
   consultar(@Param('idContrato', ParseIntPipe) idContrato: number) {
     const dto: ConsultarContratoContratistaDto = { idContrato };

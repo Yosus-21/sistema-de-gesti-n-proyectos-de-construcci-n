@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { parseBooleanEnv, parsePositiveIntEnv } from '../common';
+import { isPublicRegistrationEnabled, parsePositiveIntEnv } from '../common';
 import { RolUsuario, Usuario } from '../domain';
 import { USUARIO_REPOSITORY, type UsuarioRepository } from '../infrastructure';
 import { AuthResponseDto, AuthUserDto, LoginDto, RegisterUserDto } from './dto';
@@ -22,7 +22,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterUserDto): Promise<AuthUserDto> {
-    if (!parseBooleanEnv(process.env.AUTH_REGISTER_ENABLED, true)) {
+    if (!isPublicRegistrationEnabled()) {
       throw new ForbiddenException(
         'El registro público de usuarios está deshabilitado.',
       );

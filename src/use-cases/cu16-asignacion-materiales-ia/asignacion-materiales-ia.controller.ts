@@ -91,7 +91,12 @@ export class AsignacionMaterialesIaController {
   @ApiOperation({ summary: 'Listar asignaciones de materiales IA' })
   @ApiPaginationQueries()
   @ApiEnvelopeOk('Asignaciones listadas correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get()
   listar(@Query() dto: ListarAsignacionesMaterialDto) {
     return this.asignacionMaterialesIaService.listar(dto);

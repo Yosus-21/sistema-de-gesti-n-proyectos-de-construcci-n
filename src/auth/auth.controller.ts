@@ -33,7 +33,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Registrar usuario base',
     description:
-      'En esta fase el endpoint puede quedar abierto para bootstrap controlado cuando AUTH_REGISTER_ENABLED=true. En producción se recomienda deshabilitarlo después de crear el usuario administrador inicial.',
+      'Endpoint de bootstrap para desarrollo/test cuando AUTH_REGISTER_ENABLED=true. En producción el registro público de ADMIN debe permanecer deshabilitado y el usuario inicial debe crearse por seed o procedimiento manual controlado.',
   })
   @ApiBody({ type: RegisterUserDto })
   @ApiEnvelopeCreated('Usuario registrado correctamente.')

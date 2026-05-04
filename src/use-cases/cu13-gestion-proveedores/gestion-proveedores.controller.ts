@@ -92,7 +92,12 @@ export class GestionProveedoresController {
   @ApiOperation({ summary: 'Listar proveedores' })
   @ApiPaginationQueries()
   @ApiEnvelopeOk('Proveedores listados correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get()
   listar(@Query() dto: ListarProveedoresDto) {
     return this.gestionProveedoresService.listar(dto);
@@ -101,7 +106,12 @@ export class GestionProveedoresController {
   @ApiOperation({ summary: 'Validar proveedor' })
   @ApiNumericParam('idProveedor', 'Identificador del proveedor a validar.')
   @ApiEnvelopeOk('Proveedor validado correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idProveedor/validar')
   validar(@Param('idProveedor', ParseIntPipe) idProveedor: number) {
     const dto: ValidarProveedorDto = { idProveedor };
@@ -111,7 +121,12 @@ export class GestionProveedoresController {
   @ApiOperation({ summary: 'Consultar proveedor por identificador' })
   @ApiNumericParam('idProveedor', 'Identificador del proveedor a consultar.')
   @ApiEnvelopeOk('Proveedor consultado correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idProveedor')
   consultar(@Param('idProveedor', ParseIntPipe) idProveedor: number) {
     const dto: ConsultarProveedorDto = { idProveedor };
@@ -135,6 +150,7 @@ export class GestionProveedoresController {
   @ApiOperation({ summary: 'Eliminar proveedor' })
   @ApiNumericParam('idProveedor', 'Identificador del proveedor a eliminar.')
   @ApiEnvelopeOk('Proveedor eliminado correctamente.')
+  @Roles(RolUsuario.ADMIN)
   @Delete(':idProveedor')
   eliminar(@Param('idProveedor', ParseIntPipe) idProveedor: number) {
     const dto: EliminarProveedorDto = { idProveedor };

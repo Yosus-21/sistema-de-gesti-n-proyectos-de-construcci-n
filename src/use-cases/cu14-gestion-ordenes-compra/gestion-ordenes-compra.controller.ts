@@ -128,7 +128,12 @@ export class GestionOrdenesCompraController {
   @ApiOperation({ summary: 'Listar órdenes de compra' })
   @ApiPaginationQueries()
   @ApiEnvelopeOk('Órdenes de compra listadas correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get()
   listar(@Query() dto: ListarOrdenesCompraDto) {
     return this.gestionOrdenesCompraService.listar(dto);
@@ -169,7 +174,12 @@ export class GestionOrdenesCompraController {
   @ApiOperation({ summary: 'Calcular monto total de la orden' })
   @ApiNumericParam('idOrdenCompra', 'Identificador de la orden a calcular.')
   @ApiEnvelopeOk('Monto total calculado correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idOrdenCompra/monto-total')
   calcularMontoTotal(
     @Param('idOrdenCompra', ParseIntPipe) idOrdenCompra: number,
@@ -181,7 +191,12 @@ export class GestionOrdenesCompraController {
   @ApiOperation({ summary: 'Consultar orden de compra por identificador' })
   @ApiNumericParam('idOrdenCompra', 'Identificador de la orden a consultar.')
   @ApiEnvelopeOk('Orden de compra consultada correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idOrdenCompra')
   consultar(@Param('idOrdenCompra', ParseIntPipe) idOrdenCompra: number) {
     const dto: ConsultarOrdenCompraDto = { idOrdenCompra };

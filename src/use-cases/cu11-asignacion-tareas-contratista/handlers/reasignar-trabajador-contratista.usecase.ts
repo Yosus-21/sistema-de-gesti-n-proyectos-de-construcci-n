@@ -12,10 +12,13 @@ import {
 } from '../../../domain';
 import {
   ASIGNACION_TAREA_REPOSITORY,
+  TAREA_REPOSITORY,
   TRABAJADOR_REPOSITORY,
   type AsignacionTareaRepository,
+  type TareaRepository,
   type TrabajadorRepository,
 } from '../../../infrastructure';
+import { TrabajadorDisponibilidadService } from '../../shared';
 import { ReasignarTrabajadorContratistaDto } from '../dto';
 
 @Injectable()
@@ -25,6 +28,9 @@ export class ReasignarTrabajadorContratistaUseCase {
     private readonly asignacionTareaRepository: AsignacionTareaRepository,
     @Inject(TRABAJADOR_REPOSITORY)
     private readonly trabajadorRepository: TrabajadorRepository,
+    @Inject(TAREA_REPOSITORY)
+    private readonly tareaRepository: TareaRepository,
+    private readonly trabajadorDisponibilidadService: TrabajadorDisponibilidadService,
   ) {}
 
   async execute(
@@ -64,6 +70,14 @@ export class ReasignarTrabajadorContratistaUseCase {
       );
     }
 
+    const tarea = await this.tareaRepository.findById(asignacion.idTarea);
+
+    if (!tarea) {
+      throw new NotFoundException(
+        `No se encontro la tarea con id ${asignacion.idTarea}.`,
+      );
+    }
+
     if (dto.idNuevoTrabajador !== asignacion.idTrabajador) {
       const yaExiste =
         await this.asignacionTareaRepository.existsActiveAssignment(
@@ -76,6 +90,12 @@ export class ReasignarTrabajadorContratistaUseCase {
           'Ya existe una asignacion activa para este trabajador en la tarea indicada.',
         );
       }
+
+      await this.trabajadorDisponibilidadService.validarDisponibleParaTarea(
+        dto.idNuevoTrabajador,
+        tarea,
+        dto.idAsignacionTarea,
+      );
     }
 
     return this.asignacionTareaRepository.update(dto.idAsignacionTarea, {

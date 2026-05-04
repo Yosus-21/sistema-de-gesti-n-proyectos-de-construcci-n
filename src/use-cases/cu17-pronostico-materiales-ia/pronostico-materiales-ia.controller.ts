@@ -58,11 +58,7 @@ class AjustarPronosticoMaterialBodyDto implements Omit<
 @ApiTags('CU17 - Pronóstico Materiales IA')
 @ApiProtectedResource()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(
-  RolUsuario.ADMIN,
-  RolUsuario.ENCARGADO_COMPRAS,
-  RolUsuario.GESTOR_PROYECTO,
-)
+@Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS)
 @ApiStandardErrorResponses('badRequest', 'notFound', 'conflict')
 @Controller('cu17/pronostico-materiales-ia')
 export class PronosticoMaterialesIaController {

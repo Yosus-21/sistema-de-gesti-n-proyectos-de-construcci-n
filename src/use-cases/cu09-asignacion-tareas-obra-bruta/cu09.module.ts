@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RepositoriesModule } from '../../infrastructure';
+import { TrabajadorDisponibilidadService } from '../shared';
 import { AsignacionTareasObraBrutaController } from './asignacion-tareas-obra-bruta.controller';
 import { AsignacionTareasObraBrutaService } from './asignacion-tareas-obra-bruta.service';
 import {
@@ -20,6 +21,7 @@ import {
     CancelarAsignacionObraBrutaUseCase,
     ConsultarAsignacionObraBrutaUseCase,
     ListarAsignacionesObraBrutaUseCase,
+    TrabajadorDisponibilidadService,
   ],
 })
 export class Cu09Module {}

@@ -42,8 +42,8 @@ export class PrismaEntregaMaterialRepository
     const query = this.buildListQuery(
       params as Record<string, unknown> | undefined,
       {
-        filterKeys: ['idOrdenCompra', 'idMaterial'],
-        searchFields: ['estadoEntrega', 'observaciones'],
+        filterKeys: ['idOrdenCompra', 'idMaterial', 'estadoEntrega'],
+        searchFields: ['observaciones'],
       },
     );
 

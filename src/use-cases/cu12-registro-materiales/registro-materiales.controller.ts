@@ -131,7 +131,13 @@ export class RegistroMaterialesController {
   @ApiOperation({ summary: 'Listar materiales' })
   @ApiPaginationQueries()
   @ApiEnvelopeOk('Materiales listados correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.INGENIERO,
+    RolUsuario.LECTOR,
+  )
   @Get()
   listar(@Query() dto: ListarMaterialesDto) {
     return this.registroMaterialesService.listar(dto);
@@ -163,7 +169,13 @@ export class RegistroMaterialesController {
     description: 'Cantidad solicitada para validar disponibilidad inmediata.',
   })
   @ApiEnvelopeOk('Disponibilidad del material verificada correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.INGENIERO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idMaterial/disponibilidad')
   verificarDisponibilidad(
     @Param('idMaterial', ParseIntPipe) idMaterial: number,
@@ -180,7 +192,13 @@ export class RegistroMaterialesController {
   @ApiOperation({ summary: 'Consultar material por identificador' })
   @ApiNumericParam('idMaterial', 'Identificador del material a consultar.')
   @ApiEnvelopeOk('Material consultado correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.INGENIERO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idMaterial')
   consultar(@Param('idMaterial', ParseIntPipe) idMaterial: number) {
     const dto: ConsultarMaterialDto = { idMaterial };
@@ -206,6 +224,7 @@ export class RegistroMaterialesController {
   @ApiOperation({ summary: 'Eliminar material' })
   @ApiNumericParam('idMaterial', 'Identificador del material a eliminar.')
   @ApiEnvelopeOk('Material eliminado correctamente.')
+  @Roles(RolUsuario.ADMIN)
   @Delete(':idMaterial')
   eliminar(@Param('idMaterial', ParseIntPipe) idMaterial: number) {
     const dto: EliminarMaterialDto = { idMaterial };

@@ -34,7 +34,6 @@ import {
 @Roles(
   RolUsuario.ADMIN,
   RolUsuario.GESTOR_PROYECTO,
-  RolUsuario.INGENIERO,
   RolUsuario.ENCARGADO_COMPRAS,
 )
 @ApiStandardErrorResponses('badRequest', 'notFound', 'conflict')

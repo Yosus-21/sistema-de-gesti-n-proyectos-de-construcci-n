@@ -88,6 +88,7 @@ export class AlertasNotificacionesController {
     RolUsuario.GESTOR_PROYECTO,
     RolUsuario.INGENIERO,
     RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.CONTRATISTA,
     RolUsuario.LECTOR,
   )
   @Get()
@@ -137,6 +138,7 @@ export class AlertasNotificacionesController {
     RolUsuario.GESTOR_PROYECTO,
     RolUsuario.INGENIERO,
     RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.CONTRATISTA,
     RolUsuario.LECTOR,
   )
   @Get(':idAlerta')

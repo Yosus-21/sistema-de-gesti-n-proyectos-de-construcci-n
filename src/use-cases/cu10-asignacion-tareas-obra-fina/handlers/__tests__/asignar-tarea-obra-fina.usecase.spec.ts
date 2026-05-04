@@ -18,6 +18,7 @@ import type {
   TareaRepository,
   TrabajadorRepository,
 } from '../../../../infrastructure';
+import type { TrabajadorDisponibilidadService } from '../../../shared';
 import { AsignarTareaObraFinaDto } from '../../dto';
 import { AsignarTareaObraFinaUseCase } from '../asignar-tarea-obra-fina.usecase';
 import { expectAnyDate } from '../../../../test-utils/typed-matchers';
@@ -27,6 +28,7 @@ describe('AsignarTareaObraFinaUseCase', () => {
   let asignacionTareaRepositoryMock: jest.Mocked<AsignacionTareaRepository>;
   let tareaRepositoryMock: jest.Mocked<TareaRepository>;
   let trabajadorRepositoryMock: jest.Mocked<TrabajadorRepository>;
+  let disponibilidadServiceMock: jest.Mocked<TrabajadorDisponibilidadService>;
 
   const dtoBase: AsignarTareaObraFinaDto = {
     idTarea: 10,
@@ -88,10 +90,16 @@ describe('AsignarTareaObraFinaUseCase', () => {
       existsByCiOrCorreoExcludingId: jest.fn(),
     };
 
+    disponibilidadServiceMock = {
+      verificar: jest.fn(),
+      validarDisponibleParaTarea: jest.fn(),
+    } as unknown as jest.Mocked<TrabajadorDisponibilidadService>;
+
     useCase = new AsignarTareaObraFinaUseCase(
       asignacionTareaRepositoryMock,
       tareaRepositoryMock,
       trabajadorRepositoryMock,
+      disponibilidadServiceMock,
     );
   });
 
@@ -112,6 +120,7 @@ describe('AsignarTareaObraFinaUseCase', () => {
     asignacionTareaRepositoryMock.existsActiveAssignment.mockResolvedValue(
       false,
     );
+    disponibilidadServiceMock.validarDisponibleParaTarea.mockResolvedValue();
     asignacionTareaRepositoryMock.create.mockResolvedValue(asignacionCreada);
 
     const result = await useCase.execute(dtoBase);
@@ -123,6 +132,9 @@ describe('AsignarTareaObraFinaUseCase', () => {
     expect(
       asignacionTareaRepositoryMock.existsActiveAssignment,
     ).toHaveBeenCalledWith(dtoBase.idTarea, dtoBase.idTrabajador);
+    expect(
+      disponibilidadServiceMock.validarDisponibleParaTarea.mock.calls[0],
+    ).toEqual([dtoBase.idTrabajador, tareaObraFina]);
     expect(asignacionTareaRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         idTarea: dtoBase.idTarea,
@@ -195,6 +207,24 @@ describe('AsignarTareaObraFinaUseCase', () => {
     trabajadorRepositoryMock.findById.mockResolvedValue(trabajadorCompatible);
     asignacionTareaRepositoryMock.existsActiveAssignment.mockResolvedValue(
       true,
+    );
+
+    await expect(useCase.execute(dtoBase)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(asignacionTareaRepositoryMock.create).not.toHaveBeenCalled();
+  });
+
+  it('lanza ConflictException si el trabajador no esta disponible', async () => {
+    tareaRepositoryMock.findById.mockResolvedValue(tareaObraFina);
+    trabajadorRepositoryMock.findById.mockResolvedValue(trabajadorCompatible);
+    asignacionTareaRepositoryMock.existsActiveAssignment.mockResolvedValue(
+      false,
+    );
+    disponibilidadServiceMock.validarDisponibleParaTarea.mockRejectedValue(
+      new ConflictException(
+        'El trabajador no está disponible en el rango de fechas de la tarea.',
+      ),
     );
 
     await expect(useCase.execute(dtoBase)).rejects.toBeInstanceOf(

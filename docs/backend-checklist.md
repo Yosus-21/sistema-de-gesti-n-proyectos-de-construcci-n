@@ -7,7 +7,10 @@
 - [ ] Docker Compose operativo
 - [ ] `.env` derivado de `.env.example` cuando aplique
 - [ ] Variables de seguridad (`CORS_*`, `THROTTLE_*`) definidas para el entorno
+- [ ] `NODE_ENV` definido como `development`, `test` o `production`
+- [ ] `JWT_SECRET` fuerte y no versionado definido para producción
 - [ ] `AUTH_REGISTER_ENABLED` definido según el entorno
+- [ ] Variables de bootstrap admin (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) definidas solo cuando se ejecute el seed
 
 ## Base de datos
 
@@ -44,20 +47,49 @@
 - [ ] Bootstrap de registro controlado con `AUTH_REGISTER_ENABLED`
 - [ ] Registro/login/me verificados
 - [ ] Hash de contraseña activo con bcrypt
-- [ ] RBAC básico activo con lectura controlada para `LECTOR`
+- [ ] RBAC activo con permisos refinados por método cuando aplica
+- [ ] `LECTOR` limitado a `GET` no destructivos
+- [ ] Roles de escritura acotados por responsabilidad funcional
+- [ ] CU08 valida disponibilidad contra asignaciones activas y fechas planificadas de tareas
+- [ ] CU09/CU10/CU11 bloquean asignaciones con solapamiento de agenda
+- [ ] CU15 confirma recepcion, incrementa stock y actualiza orden completa a `RECIBIDA`
+- [ ] CU15 calcula avance de orden solo con entregas `RECIBIDA`
 - [ ] `/health` público para monitoreo externo
 - [ ] `auth/register` controlado por configuración y `auth/login` público
+- [ ] Seed admin disponible con `npm run seed:admin`
+
+## Checklist de produccion
+
+- [ ] `NODE_ENV=production`
+- [ ] `JWT_SECRET` existe, tiene al menos 32 caracteres y no usa placeholders (`secret`, `changeme`, `dev-secret`, `test-secret`, etc.)
+- [ ] `AUTH_REGISTER_ENABLED=false` o sin definir; nunca `true` en producción
+- [ ] Admin inicial creado por seed/manual controlado, no por registro público abierto en producción
+- [ ] `ADMIN_EMAIL` definido para bootstrap controlado
+- [ ] `ADMIN_PASSWORD` fuerte, temporal y de al menos 12 caracteres
+- [ ] `npm run seed:admin` ejecutado en entorno controlado
+- [ ] Login verificado con usuario `ADMIN`
+- [ ] Credenciales temporales de bootstrap eliminadas, rotadas o gestionadas como secreto después de usarlas
+- [ ] `CORS_ORIGIN` limitado al frontend real, sin `*` salvo excepción revisada
+- [ ] `THROTTLE_TTL` y `THROTTLE_LIMIT` ajustados al tráfico esperado
+- [ ] `.env` real excluido del repositorio y gestionado como secreto del entorno
+- [ ] `npm run prisma:migrate:deploy` usado para aplicar migraciones en despliegue productivo
+- [ ] Matriz RBAC revisada antes de habilitar usuarios reales
+- [ ] `ADMIN` reservado para operacion/soporte con acceso total
+- [ ] `ENCARGADO_COMPRAS` validado para materiales, proveedores, ordenes, entregas y flujos IA de materiales
+- [ ] `INGENIERO` validado para tareas, cronogramas, seguimiento, asignaciones tecnicas, alertas y reportes, sin escritura en compras/materiales
+- [ ] `CONTRATISTA` validado para CU11 y consultas vinculadas, sin acceso a compras/materiales/clientes
+- [ ] Endpoints `POST`, `PATCH` y `DELETE` probados con roles insuficientes para confirmar `403`
 
 ## Deudas tecnicas conocidas
 
-- [ ] CU08 disponibilidad/calendario real pendiente
-- [ ] CU15 no actualiza automaticamente `ordenCompra.estadoOrden` a `RECIBIDA`
 - [ ] CU16 IA externa pendiente
 - [ ] CU17 IA externa pendiente
 - [ ] CU18 notificacion externa real pendiente
 - [ ] CU19 generacion PDF real pendiente
-- [ ] RBAC granular por roles/permisos pendiente
-- [ ] Afinar permisos específicos por método/acción más allá de la primera política de lectura para `LECTOR`
+- [ ] RBAC por pertenencia/recurso pendiente cuando existan relaciones usuario-proyecto/contratista
+- [ ] Auditoria de permisos a nivel de datos pendiente para evitar acceso transversal entre proyectos
+- [ ] Calendario laboral avanzado pendiente para disponibilidad de trabajadores (jornadas, feriados, vacaciones, capacidad parcial)
+- [ ] Estado parcial de orden pendiente si el negocio requiere distinguir recepción parcial en `EstadoOrdenCompra`
 
 ## Entrega recomendada
 

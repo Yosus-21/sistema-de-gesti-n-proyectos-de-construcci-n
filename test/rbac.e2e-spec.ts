@@ -36,6 +36,8 @@ describe('RBAC (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
   let adminHeaders: { Authorization: string };
+  let purchasingHeaders: { Authorization: string };
+  let engineerHeaders: { Authorization: string };
   let contractorHeaders: { Authorization: string };
   let lectorHeaders: { Authorization: string };
 
@@ -56,6 +58,15 @@ describe('RBAC (e2e)', () => {
     telefono: '70000001',
     correo: `e2e-rbac-cliente-${Date.now()}@example.com`,
     tipoCliente: 'EMPRESA',
+  };
+  const materialPayload = {
+    nombre: `Material RBAC Compras ${Date.now()}`,
+    descripcion: 'Material de prueba RBAC',
+    tipoMaterial: 'GENERAL',
+    unidad: 'unidad',
+    cantidadDisponible: 10,
+    costoUnitario: 5,
+    especificacionesTecnicas: 'Uso e2e',
   };
 
   const cleanupUsers = async () => {
@@ -78,6 +89,16 @@ describe('RBAC (e2e)', () => {
     });
   };
 
+  const cleanupMateriales = async () => {
+    await prismaService.material.deleteMany({
+      where: {
+        nombre: {
+          contains: 'RBAC',
+        },
+      },
+    });
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -92,11 +113,24 @@ describe('RBAC (e2e)', () => {
 
     await cleanupUsers();
     await cleanupClientes();
+    await cleanupMateriales();
 
     adminHeaders = await getAdminAuthHeaders(
       app,
       prismaService,
       'e2e-rbac-admin',
+    );
+    purchasingHeaders = await getRoleAuthHeaders(
+      app,
+      prismaService,
+      'e2e-rbac-purchasing',
+      PrismaRolUsuario.ENCARGADO_COMPRAS,
+    );
+    engineerHeaders = await getRoleAuthHeaders(
+      app,
+      prismaService,
+      'e2e-rbac-engineer',
+      PrismaRolUsuario.INGENIERO,
     );
     contractorHeaders = await getRoleAuthHeaders(
       app,
@@ -123,6 +157,7 @@ describe('RBAC (e2e)', () => {
       process.env.AUTH_REGISTER_ENABLED = originalAuthRegisterEnabled;
     }
 
+    await cleanupMateriales();
     await cleanupClientes();
     await cleanupUsers();
     await app?.close();
@@ -257,6 +292,69 @@ describe('RBAC (e2e)', () => {
       });
   });
 
+  it('permite a ENCARGADO_COMPRAS registrar materiales', async () => {
+    const purchasingApi = createAuthorizedRequest(app, purchasingHeaders);
+
+    await purchasingApi
+      .post('/cu12/materiales')
+      .send(materialPayload)
+      .expect(201)
+      .expect((response) => {
+        const body = getSuccessBody<{ idMaterial: number; nombre: string }>(
+          response,
+        );
+        expect(body.success).toBe(true);
+        expect(body.data.idMaterial).toEqual(expectAnyNumber());
+        expect(body.data.nombre).toBe(materialPayload.nombre);
+      });
+  });
+
+  it('bloquea a ENCARGADO_COMPRAS en escritura de clientes', async () => {
+    const purchasingApi = createAuthorizedRequest(app, purchasingHeaders);
+
+    await purchasingApi
+      .patch('/cu01/clientes/1')
+      .send({ nombre: 'Cliente bloqueado compras' })
+      .expect(403)
+      .expect((response) => {
+        const body = getErrorBody(response);
+        expect(body.statusCode).toBe(403);
+        expect(body.message).toBe(
+          'No tiene permisos para acceder a este recurso.',
+        );
+      });
+  });
+
+  it('permite a INGENIERO consultar tareas y seguimientos', async () => {
+    const engineerApi = createAuthorizedRequest(app, engineerHeaders);
+
+    await engineerApi.get('/cu03/tareas-obra-fina').expect(200);
+    await engineerApi.get('/cu06/seguimientos').expect(200);
+  });
+
+  it('bloquea a INGENIERO en materiales y compras', async () => {
+    const engineerApi = createAuthorizedRequest(app, engineerHeaders);
+
+    await engineerApi
+      .post('/cu12/materiales')
+      .send({
+        ...materialPayload,
+        nombre: `Material RBAC Ingeniero ${Date.now()}`,
+      })
+      .expect(403);
+
+    await engineerApi
+      .patch('/cu14/ordenes-compra/1')
+      .send({ observaciones: 'No autorizado' })
+      .expect(403);
+  });
+
+  it('permite a CONTRATISTA consultar CU11 asignaciones por contratista', async () => {
+    const contractorApi = createAuthorizedRequest(app, contractorHeaders);
+
+    await contractorApi.get('/cu11/asignaciones-contratista').expect(200);
+  });
+
   it('devuelve 403 cuando el rol autenticado no tiene acceso al módulo', async () => {
     const contractorApi = createAuthorizedRequest(app, contractorHeaders);
 
@@ -274,5 +372,7 @@ describe('RBAC (e2e)', () => {
           errors: [],
         });
       });
+
+    await contractorApi.get('/cu14/ordenes-compra').expect(403);
   });
 });

@@ -3,7 +3,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/common';
-import { OcupacionTrabajador } from './../src/domain';
+import {
+  EstadoAsignacion,
+  EstadoTarea,
+  OcupacionTrabajador,
+  PrioridadTarea,
+  TipoTarea,
+} from './../src/domain';
 import { PrismaService } from './../src/infrastructure';
 import {
   expectAnyNumber,
@@ -27,8 +33,41 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
   const correoPrueba = `trabajador-e2e-cu08-${timestamp}@example.com`;
   const correoActualizado = `trabajador-actualizado-e2e-cu08-${timestamp}@example.com`;
   const ciPrueba = `E2E-CU08-${timestamp}`;
+  const nombreTareaOcupada = `Tarea e2e-cu08-disponibilidad ${timestamp}`;
+  const nombreTareaSolapada = `Tarea e2e-cu08-disponibilidad-solapada ${timestamp}`;
 
   const cleanupTestData = async () => {
+    const tareasPrueba = await prismaService.tarea.findMany({
+      where: {
+        nombre: {
+          contains: 'e2e-cu08-disponibilidad',
+        },
+      },
+      select: {
+        idTarea: true,
+      },
+    });
+
+    const tareasIds = tareasPrueba.map((tarea) => tarea.idTarea);
+
+    if (tareasIds.length > 0) {
+      await prismaService.asignacionTarea.deleteMany({
+        where: {
+          idTarea: {
+            in: tareasIds,
+          },
+        },
+      });
+
+      await prismaService.tarea.deleteMany({
+        where: {
+          idTarea: {
+            in: tareasIds,
+          },
+        },
+      });
+    }
+
     await prismaService.trabajador.deleteMany({
       where: {
         OR: [
@@ -188,11 +227,66 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
         });
       });
 
+    const tareaOcupada = await prismaService.tarea.create({
+      data: {
+        nombre: nombreTareaOcupada,
+        descripcion: 'Tarea directa para validar disponibilidad real',
+        tipoTarea: TipoTarea.OBRA_BRUTA,
+        perfilRequerido: OcupacionTrabajador.ALBANIL,
+        duracionEstimada: 5,
+        fechaInicioPlanificada: new Date('2026-05-10T00:00:00.000Z'),
+        fechaFinPlanificada: new Date('2026-05-14T00:00:00.000Z'),
+        estadoTarea: EstadoTarea.PENDIENTE,
+        prioridad: PrioridadTarea.MEDIA,
+      },
+    });
+
+    const asignacionOcupada = await prismaService.asignacionTarea.create({
+      data: {
+        idTarea: tareaOcupada.idTarea,
+        idTrabajador: trabajadorCreadoId,
+        fechaAsignacion: new Date('2026-05-09T00:00:00.000Z'),
+        rolEnLaTarea: 'Operario ocupado',
+        estadoAsignacion: EstadoAsignacion.CONFIRMADA,
+        asignadaPorContratista: false,
+      },
+    });
+
     await api
       .get(`/cu08/trabajadores/${trabajadorCreadoId}/disponibilidad`)
       .query({
-        fechaInicio: '2026-05-10',
-        fechaFin: '2026-05-15',
+        fechaInicio: '2026-05-12',
+        fechaFin: '2026-05-13',
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          success: true,
+          timestamp: expectAnyString(),
+          data: {
+            idTrabajador: trabajadorCreadoId,
+            disponible: false,
+            fechaInicio: '2026-05-12T00:00:00.000Z',
+            fechaFin: '2026-05-13T00:00:00.000Z',
+            conflictos: [
+              {
+                idAsignacionTarea: asignacionOcupada.idAsignacionTarea,
+                idTarea: tareaOcupada.idTarea,
+                nombreTarea: nombreTareaOcupada,
+                fechaInicio: '2026-05-10T00:00:00.000Z',
+                fechaFin: '2026-05-14T00:00:00.000Z',
+                estadoAsignacion: EstadoAsignacion.CONFIRMADA,
+              },
+            ],
+          },
+        });
+      });
+
+    await api
+      .get(`/cu08/trabajadores/${trabajadorCreadoId}/disponibilidad`)
+      .query({
+        fechaInicio: '2026-05-20',
+        fechaFin: '2026-05-22',
       })
       .expect(200)
       .expect(({ body }) => {
@@ -202,8 +296,74 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
           data: {
             idTrabajador: trabajadorCreadoId,
             disponible: true,
-            motivo:
-              'Disponibilidad provisional: las asignaciones se validarán cuando se implemente CU09-CU11.',
+            fechaInicio: '2026-05-20T00:00:00.000Z',
+            fechaFin: '2026-05-22T00:00:00.000Z',
+            conflictos: [],
+          },
+        });
+      });
+
+    const tareaSolapada = await prismaService.tarea.create({
+      data: {
+        nombre: nombreTareaSolapada,
+        descripcion: 'Tarea solapada para validar bloqueo en CU09',
+        tipoTarea: TipoTarea.OBRA_BRUTA,
+        perfilRequerido: OcupacionTrabajador.ALBANIL,
+        duracionEstimada: 2,
+        fechaInicioPlanificada: new Date('2026-05-11T00:00:00.000Z'),
+        fechaFinPlanificada: new Date('2026-05-12T00:00:00.000Z'),
+        estadoTarea: EstadoTarea.PENDIENTE,
+        prioridad: PrioridadTarea.ALTA,
+      },
+    });
+
+    await api
+      .post('/cu09/asignaciones-obra-bruta')
+      .send({
+        idTarea: tareaSolapada.idTarea,
+        idTrabajador: trabajadorCreadoId,
+        fechaAsignacion: '2026-05-10T00:00:00.000Z',
+        rolEnLaTarea: 'Operario solapado',
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          success: false,
+          statusCode: 409,
+          timestamp: expectAnyString(),
+          path: '/cu09/asignaciones-obra-bruta',
+          message:
+            'El trabajador no está disponible en el rango de fechas de la tarea.',
+          errors: [],
+        });
+      });
+
+    await prismaService.asignacionTarea.update({
+      where: {
+        idAsignacionTarea: asignacionOcupada.idAsignacionTarea,
+      },
+      data: {
+        estadoAsignacion: EstadoAsignacion.CANCELADA,
+      },
+    });
+
+    await api
+      .get(`/cu08/trabajadores/${trabajadorCreadoId}/disponibilidad`)
+      .query({
+        fechaInicio: '2026-05-12',
+        fechaFin: '2026-05-13',
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          success: true,
+          timestamp: expectAnyString(),
+          data: {
+            idTrabajador: trabajadorCreadoId,
+            disponible: true,
+            fechaInicio: '2026-05-12T00:00:00.000Z',
+            fechaFin: '2026-05-13T00:00:00.000Z',
+            conflictos: [],
           },
         });
       });
@@ -227,6 +387,20 @@ describe('CU08 Gestion de Trabajador (e2e)', () => {
           'La fecha de fin no puede ser anterior a la fecha de inicio.',
         );
       });
+
+    await prismaService.asignacionTarea.deleteMany({
+      where: {
+        idTrabajador: trabajadorCreadoId,
+      },
+    });
+
+    await prismaService.tarea.deleteMany({
+      where: {
+        idTarea: {
+          in: [tareaOcupada.idTarea, tareaSolapada.idTarea],
+        },
+      },
+    });
 
     await api
       .delete(`/cu08/trabajadores/${trabajadorCreadoId}`)

@@ -24,6 +24,7 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:status": "prisma migrate status",
     "prisma:validate": "prisma validate",
+    "seed:admin": "ts-node prisma/seed-admin.ts",
     "test": "jest",
     "test:unit": "jest --runInBand",
     "test:watch": "jest --watch",

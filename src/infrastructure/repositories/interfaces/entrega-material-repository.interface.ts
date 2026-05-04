@@ -3,6 +3,7 @@ import { EntregaMaterial } from '../../../domain';
 export interface EntregaMaterialRepositoryFindManyParams {
   idOrdenCompra?: number;
   idMaterial?: number;
+  estadoEntrega?: string;
   pagina?: number;
   limite?: number;
 }

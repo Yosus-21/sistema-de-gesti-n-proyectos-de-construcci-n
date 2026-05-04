@@ -19,6 +19,7 @@ import {
   type TareaRepository,
   type TrabajadorRepository,
 } from '../../../infrastructure';
+import { TrabajadorDisponibilidadService } from '../../shared';
 import { AsignarTareaObraFinaDto } from '../dto';
 
 @Injectable()
@@ -30,6 +31,7 @@ export class AsignarTareaObraFinaUseCase {
     private readonly tareaRepository: TareaRepository,
     @Inject(TRABAJADOR_REPOSITORY)
     private readonly trabajadorRepository: TrabajadorRepository,
+    private readonly trabajadorDisponibilidadService: TrabajadorDisponibilidadService,
   ) {}
 
   async execute(dto: AsignarTareaObraFinaDto): Promise<AsignacionTarea> {
@@ -70,6 +72,11 @@ export class AsignarTareaObraFinaUseCase {
         'Ya existe una asignacion activa para este trabajador en la tarea indicada.',
       );
     }
+
+    await this.trabajadorDisponibilidadService.validarDisponibleParaTarea(
+      dto.idTrabajador,
+      tarea,
+    );
 
     const asignacion = new AsignacionTarea({
       idTarea: dto.idTarea,

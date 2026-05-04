@@ -22,14 +22,17 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
   let authHeaders: { Authorization: string };
   let proveedorPruebaId: number;
   let materialPruebaId: number;
+  let materialPruebaBId: number;
   let materialFueraOrdenId: number;
   let ordenCompraPruebaId: number;
   let entregaCreadaId: number | undefined;
+  let entregaMaterialBId: number | undefined;
 
   const timestamp = Date.now();
   const nombreProveedorPrueba = `Proveedor e2e-cu15 ${timestamp}`;
   const correoProveedorPrueba = `proveedor-e2e-cu15-${timestamp}@example.com`;
   const nombreMaterialPrueba = `Material e2e-cu15 ${timestamp}`;
+  const nombreMaterialPruebaB = `Material B e2e-cu15 ${timestamp}`;
   const nombreMaterialFueraOrden = `Material fuera orden e2e-cu15 ${timestamp}`;
 
   const cleanupTestData = async () => {
@@ -194,6 +197,20 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
 
     materialPruebaId = materialPrueba.idMaterial;
 
+    const materialPruebaB = await prismaService.material.create({
+      data: {
+        nombre: nombreMaterialPruebaB,
+        descripcion: 'Segundo material de prueba E2E CU15',
+        tipoMaterial: TipoMaterial.GENERAL,
+        unidad: 'bolsa',
+        cantidadDisponible: 2,
+        costoUnitario: 22,
+        especificacionesTecnicas: 'Specs CU15 B',
+      },
+    });
+
+    materialPruebaBId = materialPruebaB.idMaterial;
+
     const materialFueraOrden = await prismaService.material.create({
       data: {
         nombre: nombreMaterialFueraOrden,
@@ -224,6 +241,16 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
         idMaterial: materialPruebaId,
         cantidadSolicitada: 5,
         precioUnitarioAcordado: 15,
+        estadoLinea: 'PENDIENTE',
+      },
+    });
+
+    await prismaService.lineaOrdenCompra.create({
+      data: {
+        idOrdenCompra: ordenCompraPruebaId,
+        idMaterial: materialPruebaBId,
+        cantidadSolicitada: 3,
+        precioUnitarioAcordado: 22,
         estadoLinea: 'PENDIENTE',
       },
     });
@@ -426,6 +453,73 @@ describe('CU15 Gestion de Entrega de Materiales (e2e)', () => {
     });
 
     expect(materialActualizado?.cantidadDisponible).toBe(15);
+
+    await api
+      .get(`/cu14/ordenes-compra/${ordenCompraPruebaId}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          success: true,
+          timestamp: expectAnyString(),
+          data: expectObjectContaining({
+            idOrdenCompra: ordenCompraPruebaId,
+            estadoOrden: EstadoOrdenCompra.EMITIDA,
+          }),
+        });
+      });
+
+    const entregaMaterialBResponse = await api
+      .post('/cu15/entregas-materiales')
+      .send({
+        idOrdenCompra: ordenCompraPruebaId,
+        idMaterial: materialPruebaBId,
+        fechaEntrega: '2026-06-16T00:00:00.000Z',
+        cantidadEntregada: 3,
+        observaciones: 'Entrega completa material B',
+      })
+      .expect(201);
+
+    entregaMaterialBId = getSuccessBody<{ idEntregaMaterial: number }>(
+      entregaMaterialBResponse,
+    ).data.idEntregaMaterial;
+
+    await api
+      .patch(
+        `/cu15/entregas-materiales/${entregaMaterialBId}/confirmar-recepcion`,
+      )
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          success: true,
+          timestamp: expectAnyString(),
+          data: expectObjectContaining({
+            idEntregaMaterial: entregaMaterialBId,
+            estadoEntrega: 'RECIBIDA',
+          }),
+        });
+      });
+
+    const materialBActualizado = await prismaService.material.findUnique({
+      where: {
+        idMaterial: materialPruebaBId,
+      },
+    });
+
+    expect(materialBActualizado?.cantidadDisponible).toBe(5);
+
+    await api
+      .get(`/cu14/ordenes-compra/${ordenCompraPruebaId}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          success: true,
+          timestamp: expectAnyString(),
+          data: expectObjectContaining({
+            idOrdenCompra: ordenCompraPruebaId,
+            estadoOrden: EstadoOrdenCompra.RECIBIDA,
+          }),
+        });
+      });
 
     await api
       .patch(`/cu15/entregas-materiales/${entregaCreadaId}/confirmar-recepcion`)

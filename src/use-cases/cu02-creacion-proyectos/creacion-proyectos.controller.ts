@@ -31,7 +31,7 @@ import {
 @ApiTags('CU02 - Proyectos')
 @ApiProtectedResource()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.INGENIERO)
+@Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO)
 @ApiStandardErrorResponses('badRequest', 'notFound', 'conflict')
 @Controller('cu02/proyectos')
 export class CreacionProyectosController {
@@ -62,6 +62,8 @@ export class CreacionProyectosController {
     RolUsuario.ADMIN,
     RolUsuario.GESTOR_PROYECTO,
     RolUsuario.INGENIERO,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.CONTRATISTA,
     RolUsuario.LECTOR,
   )
   @Get()
@@ -76,6 +78,8 @@ export class CreacionProyectosController {
     RolUsuario.ADMIN,
     RolUsuario.GESTOR_PROYECTO,
     RolUsuario.INGENIERO,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.CONTRATISTA,
     RolUsuario.LECTOR,
   )
   @Get(':idProyecto')

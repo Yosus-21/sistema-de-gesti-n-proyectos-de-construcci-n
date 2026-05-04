@@ -31,6 +31,7 @@ import {
   VerificarDisponibilidadTrabajadorDto,
 } from './dto';
 import {
+  ApiExtraModels,
   ApiOperation,
   ApiProperty,
   ApiPropertyOptional,
@@ -105,8 +106,49 @@ class VerificarDisponibilidadTrabajadorQueryDto {
   fechaFin: string;
 }
 
+class ConflictoDisponibilidadTrabajadorResponseDto {
+  @ApiProperty()
+  idAsignacionTarea: number;
+
+  @ApiProperty()
+  idTarea: number;
+
+  @ApiProperty()
+  nombreTarea: string;
+
+  @ApiProperty()
+  fechaInicio: string;
+
+  @ApiProperty()
+  fechaFin: string;
+
+  @ApiProperty()
+  estadoAsignacion: string;
+}
+
+class VerificarDisponibilidadTrabajadorResponseDto {
+  @ApiProperty()
+  idTrabajador: number;
+
+  @ApiProperty()
+  disponible: boolean;
+
+  @ApiProperty()
+  fechaInicio: string;
+
+  @ApiProperty()
+  fechaFin: string;
+
+  @ApiProperty({ type: [ConflictoDisponibilidadTrabajadorResponseDto] })
+  conflictos: ConflictoDisponibilidadTrabajadorResponseDto[];
+}
+
 @ApiTags('CU08 - Trabajadores')
 @ApiProtectedResource()
+@ApiExtraModels(
+  ConflictoDisponibilidadTrabajadorResponseDto,
+  VerificarDisponibilidadTrabajadorResponseDto,
+)
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO)
 @ApiStandardErrorResponses('badRequest', 'notFound', 'conflict')
@@ -135,13 +177,22 @@ export class GestionTrabajadorController {
   @ApiOperation({ summary: 'Listar trabajadores' })
   @ApiPaginationQueries()
   @ApiEnvelopeOk('Trabajadores listados correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.INGENIERO,
+    RolUsuario.LECTOR,
+  )
   @Get()
   listar(@Query() dto: ListarTrabajadoresDto) {
     return this.gestionTrabajadorService.listar(dto);
   }
 
-  @ApiOperation({ summary: 'Verificar disponibilidad de trabajador' })
+  @ApiOperation({
+    summary: 'Verificar disponibilidad real de trabajador',
+    description:
+      'Evalua asignaciones activas del trabajador y detecta solapamientos con las fechas planificadas de tareas existentes.',
+  })
   @ApiNumericParam('idTrabajador', 'Identificador del trabajador a verificar.')
   @ApiQuery({
     name: 'fechaInicio',
@@ -158,7 +209,12 @@ export class GestionTrabajadorController {
     description: 'Fecha de fin del rango a evaluar.',
   })
   @ApiEnvelopeOk('Disponibilidad del trabajador verificada correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.INGENIERO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idTrabajador/disponibilidad')
   verificarDisponibilidad(
     @Param('idTrabajador', ParseIntPipe) idTrabajador: number,
@@ -175,7 +231,12 @@ export class GestionTrabajadorController {
   @ApiOperation({ summary: 'Consultar trabajador por identificador' })
   @ApiNumericParam('idTrabajador', 'Identificador del trabajador a consultar.')
   @ApiEnvelopeOk('Trabajador consultado correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.GESTOR_PROYECTO, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.INGENIERO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idTrabajador')
   consultar(@Param('idTrabajador', ParseIntPipe) idTrabajador: number) {
     const dto: ConsultarTrabajadorDto = { idTrabajador };

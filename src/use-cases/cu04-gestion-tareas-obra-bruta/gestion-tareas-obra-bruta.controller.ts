@@ -111,6 +111,8 @@ export class GestionTareasObraBrutaController {
     RolUsuario.ADMIN,
     RolUsuario.GESTOR_PROYECTO,
     RolUsuario.INGENIERO,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.CONTRATISTA,
     RolUsuario.LECTOR,
   )
   @Get()

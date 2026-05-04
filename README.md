@@ -35,6 +35,7 @@ Toma `.env.example` como base para un `.env` local si lo necesitas.
 
 Variables esperadas:
 
+- `NODE_ENV`
 - `PORT`
 - `DB_HOST`
 - `DB_PORT`
@@ -52,28 +53,78 @@ Variables esperadas:
 - `JWT_EXPIRES_IN`
 - `BCRYPT_SALT_ROUNDS`
 - `AUTH_REGISTER_ENABLED`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- `ADMIN_NOMBRE`
+- `ADMIN_OVERWRITE_PASSWORD`
 
 Ejemplo actual:
 
 ```env
+# App
+NODE_ENV=development
 PORT=3000
+
+# Database
 DB_HOST=localhost
 DB_PORT=5433
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 DB_DATABASE=suarq_db
 DATABASE_URL="postgresql://postgres:postgres@localhost:5433/suarq_db?schema=public"
+
+# Security
+JWT_SECRET=change-me-in-production-use-32-plus-random-characters
+JWT_EXPIRES_IN=1h
+BCRYPT_SALT_ROUNDS=10
+AUTH_REGISTER_ENABLED=true
+
+# Admin bootstrap
+ADMIN_EMAIL=admin@suarq.local
+ADMIN_PASSWORD=change-me-admin-password
+ADMIN_NOMBRE=Administrador
+ADMIN_OVERWRITE_PASSWORD=false
+
+# CORS
 CORS_ENABLED=true
 CORS_ORIGIN=http://localhost:3000
 CORS_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE
 CORS_CREDENTIALS=true
+
+# Rate limiting
 THROTTLE_TTL=60
 THROTTLE_LIMIT=100
-JWT_SECRET=change_me_in_production
-JWT_EXPIRES_IN=1h
-BCRYPT_SALT_ROUNDS=10
-AUTH_REGISTER_ENABLED=true
 ```
+
+## Ambientes y secretos
+
+El backend distingue `development`, `test` y `production` mediante `NODE_ENV`.
+
+- `development`: permite fallback controlado de `JWT_SECRET` si no se define y permite `AUTH_REGISTER_ENABLED=true` para bootstrap local.
+- `test`: permite fallback controlado de `JWT_SECRET`; los e2e configuran explícitamente `NODE_ENV=test`, `JWT_SECRET` y `AUTH_REGISTER_ENABLED=true` desde `test/setup-env.ts`.
+- `production`: exige `JWT_SECRET` fuerte, aleatorio y de al menos 32 caracteres. La app falla al arrancar si falta o si usa valores débiles como `secret`, `changeme`, `dev-secret`, `test-secret` o placeholders similares.
+
+En producción, `AUTH_REGISTER_ENABLED` debe quedar en `false` o no definirse. Si `AUTH_REGISTER_ENABLED=true` con `NODE_ENV=production`, la app falla al arrancar para evitar registro público accidental de usuarios `ADMIN`.
+
+El usuario administrador inicial debe crearse por seed/manual controlado o, en un entorno seguro no productivo, habilitando temporalmente `AUTH_REGISTER_ENABLED=true` para bootstrap y deshabilitándolo inmediatamente después. No subas `.env` al repositorio ni uses credenciales reales de producción en archivos versionados.
+
+También ajusta `CORS_ORIGIN` al dominio real del frontend en producción; evita `*` salvo escenarios explícitamente controlados. `THROTTLE_TTL` y `THROTTLE_LIMIT` son configurables por ambiente según el nivel esperado de tráfico.
+
+## Bootstrap de administrador
+
+Para crear o asegurar el usuario `ADMIN` inicial sin abrir `POST /auth/register` en producción:
+
+1. Configura `ADMIN_EMAIL`, `ADMIN_PASSWORD` y opcionalmente `ADMIN_NOMBRE`.
+2. Ejecuta:
+
+```bash
+npm run seed:admin
+```
+
+3. En producción mantén `AUTH_REGISTER_ENABLED=false` o sin definir.
+4. Verifica login con `POST /auth/login` usando el correo configurado.
+
+El seed no imprime contraseñas, no guarda contraseñas en texto plano y no duplica usuarios existentes por correo. Si el usuario ya existe, asegura rol `ADMIN` y `activo=true`; por defecto no cambia la contraseña. Para rotar explícitamente la contraseña del admin existente, usa `ADMIN_OVERWRITE_PASSWORD=true` solo durante una ejecución controlada y vuelve a dejarlo en `false`.
 
 ## Instalacion
 
@@ -170,6 +221,7 @@ Notas:
 - `npm run prisma:validate`
 - `npm run prisma:generate`
 - `npm run prisma:migrate:status`
+- `npm run seed:admin`
 - `npm run lint:check`
 - `npm run test:unit`
 - `npm run test:e2e`
@@ -186,10 +238,10 @@ Notas:
 
 - `CORS_ORIGIN` acepta un origen, varios separados por coma o `*` si se configura explicitamente.
 - `THROTTLE_TTL` se interpreta en segundos y se transforma internamente a milisegundos para `@nestjs/throttler`.
-- `JWT_SECRET` debe reemplazarse por un secreto fuerte en producción.
-- `AUTH_REGISTER_ENABLED` puede quedar en `true` durante bootstrap local, pero en producción se recomienda llevarlo a `false` después de crear el usuario administrador inicial.
+- `JWT_SECRET` es obligatorio y se valida como secreto fuerte cuando `NODE_ENV=production`.
+- `AUTH_REGISTER_ENABLED=true` se permite en `development`/`test`; en `production` hace fallar el arranque.
 
-## Autenticación y RBAC inicial
+## Autenticación y RBAC
 
 - Registro inicial: `POST /auth/register`
 - Login JWT: `POST /auth/login`
@@ -215,12 +267,35 @@ Swagger:
 
 Nota:
 
-- `POST /auth/register` depende de `AUTH_REGISTER_ENABLED`; en desarrollo puede permanecer habilitado y en producción se recomienda deshabilitarlo tras el bootstrap inicial.
+- `POST /auth/register` depende de `AUTH_REGISTER_ENABLED`; en desarrollo/test puede permanecer habilitado para bootstrap, pero en producción debe quedar deshabilitado.
 - `POST /auth/login` permanece público.
 - `GET /auth/me` requiere token Bearer válido.
-- El RBAC actual es inicial: combina roles base por módulo/controller con permisos de lectura por método para `LECTOR`.
-- `LECTOR` puede consultar endpoints `GET` habilitados, pero no puede crear, modificar, eliminar ni ejecutar operaciones de cambio de estado.
+- El RBAC combina roles base por módulo/controller con permisos refinados por método cuando la lectura o escritura necesita una política distinta.
+- `LECTOR` puede consultar endpoints `GET` no destructivos habilitados, pero no puede crear, modificar, eliminar ni ejecutar operaciones de cambio de estado.
 - Los endpoints `/health` de CU01-CU19 son públicos para monitoreo externo.
+
+## Roles y permisos
+
+| Rol                 | Permisos principales                                                                                                                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ADMIN`             | Acceso total a todos los módulos protegidos.                                                                                                                                                                                                   |
+| `GESTOR_PROYECTO`   | Gestiona clientes, proyectos, cronogramas, tareas, seguimiento, contratos, trabajadores, asignaciones, alertas y reportes. Puede consultar materiales, proveedores, ordenes, entregas y resultados IA relacionados con planificacion.          |
+| `INGENIERO`         | Gestiona tareas, cronogramas, seguimiento, asignaciones tecnicas, alertas y reportes. Puede consultar proyectos, trabajadores y materiales, pero no modifica clientes, proveedores, compras ni stock.                                          |
+| `ENCARGADO_COMPRAS` | Gestiona materiales, proveedores, ordenes de compra, entregas, asignacion IA de materiales y pronosticos. Puede consultar proyectos, tareas y reportes necesarios para compras, pero no modifica clientes, proyectos, cronogramas o contratos. |
+| `CONTRATISTA`       | Consulta proyectos, tareas, contratos vinculados, alertas y CU11 asignaciones por contratista. No modifica materiales, compras, clientes ni contratos generales.                                                                               |
+| `LECTOR`            | Solo accede a `GET` no destructivos expresamente habilitados. No tiene permisos `POST`, `PATCH` ni `DELETE`.                                                                                                                                   |
+
+## Disponibilidad de trabajadores
+
+CU08 verifica disponibilidad real contra asignaciones existentes del trabajador. La regla compara el rango solicitado con `fechaInicioPlanificada` y `fechaFinPlanificada` de cada tarea asignada; las asignaciones `PENDIENTE`, `CONFIRMADA` y `REASIGNADA` ocupan agenda, mientras que `CANCELADA` no bloquea disponibilidad.
+
+CU09, CU10 y CU11 reutilizan la misma validacion al asignar o reasignar trabajadores. Si hay solapamiento, la asignacion se rechaza con `409 Conflict`.
+
+## Recepción de materiales y órdenes
+
+CU15 confirma recepción de materiales, incrementa el stock y recalcula el avance de la orden de compra usando solo entregas `RECIBIDA`. Cuando todas las líneas tienen cantidad recibida acumulada suficiente, la orden pasa automáticamente a `RECIBIDA`.
+
+El enum actual de órdenes no incluye estado parcial; por eso una orden parcialmente recibida conserva su estado vigente, normalmente `EMITIDA`, hasta que todas sus líneas estén completas.
 
 ## Estructura principal
 
@@ -262,13 +337,13 @@ Casos de uso implementados:
 
 ## Advertencias tecnicas conocidas
 
-- CU08 devuelve disponibilidad provisional; aun no implementa calendario real de ocupacion.
-- CU15 no actualiza automaticamente `ordenCompra.estadoOrden` a `RECIBIDA`.
 - CU16 usa heuristicas internas provisionales, sin IA externa real.
 - CU17 usa heuristicas internas provisionales, sin modelo predictivo externo real.
 - CU18 registra notificaciones de forma interna y provisional; no integra email, WhatsApp ni SMS.
 - CU19 exporta PDF de forma provisional y no genera archivo fisico.
 - CU07 persiste `ContratoDetalle` en esquema, pero el flujo actual de alta/modificacion se concentra en el contrato principal y en el calculo del costo total.
+- La disponibilidad de CU08 considera asignaciones y tareas existentes, pero aun no modela jornadas laborales, feriados, vacaciones, capacidad parcial por dia ni ownership por proyecto/recurso.
+- CU15 no tiene estado parcial de orden porque `EstadoOrdenCompra` solo define `BORRADOR`, `EMITIDA`, `RECIBIDA` y `CANCELADA`.
 
 ## Verificacion recomendada antes de entrega
 

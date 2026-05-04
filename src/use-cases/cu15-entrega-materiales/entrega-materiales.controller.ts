@@ -61,13 +61,22 @@ export class EntregaMaterialesController {
   @ApiOperation({ summary: 'Listar entregas de materiales' })
   @ApiPaginationQueries()
   @ApiEnvelopeOk('Entregas listadas correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get()
   listar(@Query() dto: ListarEntregasMaterialDto) {
     return this.entregaMaterialesService.listar(dto);
   }
 
-  @ApiOperation({ summary: 'Confirmar recepción de material' })
+  @ApiOperation({
+    summary: 'Confirmar recepción de material',
+    description:
+      'Marca la entrega como RECIBIDA, incrementa el stock del material y actualiza la orden de compra a RECIBIDA cuando todas sus líneas quedan completas.',
+  })
   @ApiNumericParam(
     'idEntregaMaterial',
     'Identificador de la entrega a confirmar.',
@@ -91,7 +100,12 @@ export class EntregaMaterialesController {
     'Identificador de la orden de compra a contrastar.',
   )
   @ApiEnvelopeOk('Entrega verificada correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idEntregaMaterial/verificar-contra-orden/:idOrdenCompra')
   verificarContraOrden(
     @Param('idEntregaMaterial', ParseIntPipe) idEntregaMaterial: number,
@@ -111,7 +125,12 @@ export class EntregaMaterialesController {
     'Identificador de la entrega a consultar.',
   )
   @ApiEnvelopeOk('Entrega consultada correctamente.')
-  @Roles(RolUsuario.ADMIN, RolUsuario.ENCARGADO_COMPRAS, RolUsuario.LECTOR)
+  @Roles(
+    RolUsuario.ADMIN,
+    RolUsuario.ENCARGADO_COMPRAS,
+    RolUsuario.GESTOR_PROYECTO,
+    RolUsuario.LECTOR,
+  )
   @Get(':idEntregaMaterial')
   consultar(
     @Param('idEntregaMaterial', ParseIntPipe) idEntregaMaterial: number,

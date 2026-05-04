@@ -8,12 +8,18 @@ import {
   TRABAJADOR_REPOSITORY,
   type TrabajadorRepository,
 } from '../../../infrastructure';
+import {
+  TrabajadorDisponibilidadService,
+  type ConflictoDisponibilidadTrabajador,
+} from '../../shared';
 import { VerificarDisponibilidadTrabajadorDto } from '../dto';
 
 export type VerificarDisponibilidadTrabajadorResult = {
   idTrabajador: number;
-  disponible: true;
-  motivo: string;
+  disponible: boolean;
+  fechaInicio: string;
+  fechaFin: string;
+  conflictos: ConflictoDisponibilidadTrabajador[];
 };
 
 @Injectable()
@@ -21,6 +27,7 @@ export class VerificarDisponibilidadTrabajadorUseCase {
   constructor(
     @Inject(TRABAJADOR_REPOSITORY)
     private readonly trabajadorRepository: TrabajadorRepository,
+    private readonly trabajadorDisponibilidadService: TrabajadorDisponibilidadService,
   ) {}
 
   async execute(
@@ -45,11 +52,20 @@ export class VerificarDisponibilidadTrabajadorUseCase {
       );
     }
 
+    const disponibilidad = await this.trabajadorDisponibilidadService.verificar(
+      {
+        idTrabajador: dto.idTrabajador,
+        fechaInicio,
+        fechaFin,
+      },
+    );
+
     return {
       idTrabajador: dto.idTrabajador,
-      disponible: true,
-      motivo:
-        'Disponibilidad provisional: las asignaciones se validarán cuando se implemente CU09-CU11.',
+      disponible: disponibilidad.disponible,
+      fechaInicio: fechaInicio.toISOString(),
+      fechaFin: fechaFin.toISOString(),
+      conflictos: disponibilidad.conflictos,
     };
   }
 }
