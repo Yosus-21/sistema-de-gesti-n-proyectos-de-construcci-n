@@ -1,71 +1,70 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthProvider';
+import { httpClient } from '../../../shared/api/http-client';
+import type { LoginRequest, User } from '../../../shared/types/auth.types';
+import { Button, Input, Card } from '../../../shared/components';
+import '../styles/auth.css';
 
-export const LoginForm: React.FC = () => {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
+export function LoginForm() {
+  const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      await login({ email, contrasena: password });
+      const payload: LoginRequest = { correo, password };
+
+      const response = await httpClient.post<{ accessToken: string; user: User }>(
+        '/auth/login',
+        payload,
+      );
+      login(response.accessToken, response.user);
+      navigate('/dashboard');
     } catch (err: unknown) {
-      setError((err as Error).message || 'Error al iniciar sesión');
+      const errorMessage =
+        err instanceof Error ? err.message : 'Error al iniciar sesión';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="login-form">
-      {error && <div className="alert alert-danger" style={{ color: 'red', marginBottom: '1rem', padding: '0.5rem', background: '#ffebee', borderRadius: '4px' }}>{error}</div>}
-      
-      <div className="form-group" style={{ marginBottom: '1rem' }}>
-        <label htmlFor="email" style={{ display: 'block', marginBottom: '0.3rem' }}>Correo Electrónico</label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--color-border)', borderRadius: '4px', boxSizing: 'border-box' }}
-        />
-      </div>
+    <Card className="login-card">
+      <form className="login-form" onSubmit={handleSubmit}>
+        <h2>Iniciar Sesión</h2>
+        {error && <div className="error-message">{error}</div>}
 
-      <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-        <label htmlFor="password" style={{ display: 'block', marginBottom: '0.3rem' }}>Contraseña</label>
-        <input
-          id="password"
+        <Input
+          label="Correo electrónico"
+          name="correo"
+          type="email"
+          value={correo}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setCorreo(e.target.value)}
+          required
+        />
+
+        <Input
+          label="Contraseña"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
           required
-          style={{ width: '100%', padding: '0.5rem', border: '1px solid var(--color-border)', borderRadius: '4px', boxSizing: 'border-box' }}
         />
-      </div>
 
-      <button 
-        type="submit" 
-        disabled={loading}
-        style={{ 
-          width: '100%', 
-          padding: '0.75rem', 
-          backgroundColor: 'var(--color-primary)', 
-          color: 'white', 
-          border: 'none', 
-          borderRadius: '4px',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          fontWeight: 500
-        }}
-      >
-        {loading ? 'Iniciando sesión...' : 'Ingresar'}
-      </button>
-    </form>
+        <Button type="submit" loading={loading} className="login-submit-btn">
+          Entrar
+        </Button>
+      </form>
+    </Card>
   );
-};
+}

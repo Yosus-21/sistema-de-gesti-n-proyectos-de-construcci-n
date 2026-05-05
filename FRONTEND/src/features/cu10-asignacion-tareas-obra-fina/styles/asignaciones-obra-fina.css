@@ -1,0 +1,38 @@
+.asignaciones-obra-fina-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.detail-item label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.detail-item p {
+  font-weight: 500;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-actions, .filter-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}

@@ -2,18 +2,20 @@ import type { Role } from './roles.types';
 
 export interface User {
   idUsuario: number;
-  email: string;
   nombre: string;
+  correo: string;
   rol: Role;
   activo: boolean;
 }
 
-export interface LoginResponse {
-  accessToken: string;
-  user: User;
+export interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 export interface LoginRequest {
-  email: string;
-  contrasena: string;
+  correo: string;
+  password: string;
 }

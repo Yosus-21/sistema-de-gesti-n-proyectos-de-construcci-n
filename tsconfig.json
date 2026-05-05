@@ -21,5 +21,7 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "exclude": ["FRONTEND/**/*", "node_modules", "dist"],
+  "include": ["src/**/*", "test/**/*"]
 }

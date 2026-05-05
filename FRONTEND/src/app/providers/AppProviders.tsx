@@ -1,11 +1,7 @@
 import type { ReactNode } from 'react';
 import { AuthProvider } from './AuthProvider';
 
-interface AppProvidersProps {
-  children: ReactNode;
-}
-
-export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
+export const AppProviders = ({ children }: { children: ReactNode }) => {
   return (
     <AuthProvider>
       {children}

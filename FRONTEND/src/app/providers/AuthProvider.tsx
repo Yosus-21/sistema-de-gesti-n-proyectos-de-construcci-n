@@ -1,82 +1,93 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { User, LoginRequest, LoginResponse } from '../../shared/types/auth.types';
+import type { AuthState, User } from '../../shared/types/auth.types';
 import { httpClient } from '../../shared/api/http-client';
 
-interface AuthContextType {
-  user: User | null;
-  accessToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
+interface AuthContextType extends AuthState {
+  login: (token: string, user: User) => void;
   logout: () => void;
   loadCurrentUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem('accessToken'));
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    accessToken: localStorage.getItem('accessToken'),
+    isAuthenticated: !!localStorage.getItem('accessToken'),
+    isLoading: true,
+  });
 
-  const logout = () => {
-    setAccessToken(null);
-    setUser(null);
+  const logout = useCallback(() => {
     localStorage.removeItem('accessToken');
-  };
-
-  const loadCurrentUser = async () => {
-    try {
-      if (!accessToken) {
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      const userData = await httpClient.get<User>('/auth/me');
-      setUser(userData);
-    } catch (error) {
-      console.error('Error loading current user:', error);
-      logout();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setState({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+  }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadCurrentUser();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [logout]);
 
-  const login = async (credentials: LoginRequest) => {
-    const response = await httpClient.post<LoginResponse>('/auth/login', credentials);
-    setAccessToken(response.accessToken);
-    setUser(response.user);
-    localStorage.setItem('accessToken', response.accessToken);
+  const loadCurrentUser = useCallback(async () => {
+    try {
+      if (!state.accessToken) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+      
+      const user = await httpClient.get<User>('/auth/me');
+      setState(prev => ({
+        ...prev,
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to load user', error);
+      logout();
+    }
+  }, [state.accessToken, logout]);
+
+  useEffect(() => {
+    if (state.accessToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadCurrentUser();
+    } else {
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.accessToken]);
+
+  const login = (token: string, user: User) => {
+    localStorage.setItem('accessToken', token);
+    setState({
+      user,
+      accessToken: token,
+      isAuthenticated: true,
+      isLoading: false,
+    });
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        accessToken,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout,
-        loadCurrentUser,
-      }}
-    >
+    <AuthContext.Provider value={{ ...state, login, logout, loadCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

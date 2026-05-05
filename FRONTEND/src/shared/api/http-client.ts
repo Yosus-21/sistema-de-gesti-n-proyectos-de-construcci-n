@@ -1,44 +1,63 @@
-export const httpClient = {
-  get: async <T>(url: string): Promise<T> => request<T>(url, { method: 'GET' }),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  post: async <T>(url: string, body: any): Promise<T> => request<T>(url, { method: 'POST', body: JSON.stringify(body) }),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  patch: async <T>(url: string, body: any): Promise<T> => request<T>(url, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: async <T>(url: string): Promise<T> => request<T>(url, { method: 'DELETE' }),
-};
+import type { ApiResponse } from './api-response.types';
 
-async function request<T>(path: string, options: RequestInit): Promise<T> {
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-  const url = `${baseUrl}${path}`;
-  
-  const headers = new Headers(options.headers);
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+class ApiError extends Error {
+  public status: number;
+  public errors?: Record<string, string[]>;
+
+  constructor(status: number, message: string, errors?: Record<string, string[]>) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.errors = errors;
+  }
+}
+
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem('accessToken');
+  const headers = new Headers(options.headers || {});
   headers.set('Content-Type', 'application/json');
 
-  const token = localStorage.getItem('accessToken');
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
 
   if (response.status === 401) {
     localStorage.removeItem('accessToken');
-    window.location.href = '/login';
-    throw new Error('Sesión expirada o inválida');
+    window.dispatchEvent(new Event('auth:unauthorized'));
   }
 
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const message = data?.message || response.statusText;
-    throw new Error(message);
+  if (response.status === 403) {
+    throw new ApiError(403, 'No tienes permisos para realizar esta acción.');
   }
 
-  // NestJS backend usually wraps responses in { success, data, timestamp }
-  // but let's safely return the generic data directly if wrapped, or fallback to raw
-  if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
-    return data.data as T;
+  let data: ApiResponse<T>;
+  try {
+    data = await response.json();
+  } catch {
+    throw new ApiError(response.status, 'Invalid response from server');
   }
 
-  return data as T;
+  if (!response.ok || !data.success) {
+    throw new ApiError(response.status, data.message || 'An error occurred', data.errors);
+  }
+
+  return data.data;
 }
+
+export const httpClient = {
+  get: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'GET' }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  post: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  put: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  patch: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
+  delete: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'DELETE' }),
+};

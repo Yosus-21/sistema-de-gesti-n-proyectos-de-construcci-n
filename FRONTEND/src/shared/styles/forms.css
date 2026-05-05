@@ -1,0 +1,53 @@
+/* Global form styles - specific component styles are in their respective folders */
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+legend {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.form-group,
+.form-full {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group .input-label,
+.form-full .input-label {
+  display: block;
+  margin: 0;
+}
+
+.form-group textarea.input-field,
+.form-full textarea.input-field,
+.form-textarea {
+  width: 100%;
+  min-height: 112px;
+  padding-top: 0.875rem;
+  line-height: 1.55;
+  resize: vertical;
+  display: block;
+  font-family: inherit;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row > * {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}

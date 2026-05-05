@@ -1,9 +1,14 @@
-import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../providers/AuthProvider';
+import type { Role } from '../../shared/types/roles.types';
+import { hasRole } from '../../shared/utils/permissions';
 
-export const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+interface ProtectedRouteProps {
+  allowedRoles?: Role[];
+}
+
+export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return <div>Cargando...</div>;
@@ -11,6 +16,13 @@ export const ProtectedRoute: React.FC = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const isAllowed = user && hasRole(user.rol, allowedRoles);
+    if (!isAllowed) {
+      return <Navigate to="/403" replace />;
+    }
   }
 
   return <Outlet />;

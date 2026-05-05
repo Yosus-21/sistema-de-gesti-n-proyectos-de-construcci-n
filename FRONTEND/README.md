@@ -1,73 +1,90 @@
-# React + TypeScript + Vite
+# SuArq Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema de Gestión de Proyectos de Construcción (SuArq). Una aplicación moderna, segura y eficiente para la administración total de obras.
 
-Currently, two official plugins are available:
+## 🚀 Estado del Proyecto
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+El frontend de SuArq se encuentra **100% implementado** en su fase funcional, integrando todos los casos de uso definidos (CU01 a CU19), un sistema de autenticación robusto y control de acceso basado en roles (RBAC) visual.
 
-## React Compiler
+## 🛠️ Tecnologías Principales
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 19**: Biblioteca para interfaces de usuario.
+- **TypeScript**: Tipado estático para mayor seguridad y mantenibilidad.
+- **Vite**: Herramienta de construcción ultrarrápida.
+- **React Router DOM**: Gestión de navegación y rutas protegidas.
+- **Vanilla CSS**: Diseño premium basado en variables CSS, sin dependencias externas pesadas.
 
-## Expanding the ESLint configuration
+## 📦 Módulos Implementados
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1.  **Seguridad y Sesión**: AuthProvider, Login, RBAC Visual.
+2.  **Dashboard**: Resumen inteligente de indicadores clave.
+3.  **Gestión de Proyectos**: Clientes (CU01), Proyectos (CU02), Cronogramas (CU05), Tareas (CU03/04), Seguimiento (CU06).
+4.  **Recursos Humanos**: Trabajadores (CU08), Contratos (CU07), Asignaciones (CU09/10/11).
+5.  **Logística e Inventario**: Materiales (CU12), Proveedores (CU13), Órdenes de Compra (CU14), Entregas (CU15).
+6.  **Inteligencia Artificial**: Asignación IA (CU16), Pronóstico de Materiales (CU17).
+7.  **Comunicación**: Alertas y Notificaciones (CU18), Reportes (CU19).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🔐 Autenticación y RBAC
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **JWT**: Autenticación persistente mediante tokens.
+- **Roles Soportados**:
+    - `ADMIN`: Acceso total.
+    - `GESTOR_PROYECTO`: Gestión operativa de proyectos e IA.
+    - `INGENIERO`: Seguimiento técnico y tareas.
+    - `ENCARGADO_COMPRAS`: Logística y proveedores.
+    - `CONTRATISTA`: Vista limitada a sus asignaciones y contratos.
+    - `LECTOR`: Acceso de solo lectura en todo el sistema.
+- **Manejo de Errores**:
+    - `401 Unauthorized`: Cierre de sesión automático.
+    - `403 Forbidden`: Mensajes de error informativos y redirección a página de acceso denegado.
+    - `ProtectedRoute`: Protección de rutas a nivel de Router.
+    - `Can Component`: Control granular de visibilidad de acciones (Botones Crear/Editar/Eliminar).
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## ⚙️ Configuración
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1.  **Variables de Entorno**:
+    Crea un archivo `.env` basado en `.env.example`:
+    ```env
+    VITE_API_URL=http://localhost:3000
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+    El frontend concatena `VITE_API_URL` con paths como `/auth/login`, por lo que la URL final correcta para autenticación local es `http://localhost:3000/auth/login`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+2.  **Instalación**:
+    ```bash
+    npm install
+    ```
+
+3.  **Desarrollo**:
+    ```bash
+    npm run dev
+    ```
+
+4.  **Producción**:
+    ```bash
+    npm run build
+    ```
+
+## 🏗️ Arquitectura
+
+Basada en **Features/Casos de Uso**:
+- `src/app/`: Configuración core (Router, Layouts, Providers).
+- `src/shared/`: Infraestructura compartida (API Client, UI Components, Utils).
+- `src/features/`: Lógica de negocio encapsulada por caso de uso.
+
+## ⚠️ Limitaciones y Notas Técnicas
+
+- La seguridad real **siempre** la impone el Backend. El RBAC visual del frontend mejora la experiencia de usuario y evita errores, pero no reemplaza la validación de servidor.
+- No se utilizan manejadores de estado pesados (Redux/Zustand) por simplicidad y siguiendo las restricciones del proyecto; se utiliza `context` y `hooks` personalizados.
+- Los reportes PDF se generan en el servidor y el frontend solo gestiona el flujo de descarga/visualización.
+
+## 🔮 Siguiente Fase Sugerida
+
+1. **Code Splitting**: Implementar `React.lazy()` + `Suspense` para reducir el bundle inicial (actualmente ~522 KB).
+2. **Testing**: Añadir tests unitarios con Vitest y tests e2e con Playwright/Cypress.
+3. **Internacionalización**: Soporte multi-idioma con `react-i18next` si se requiere.
+4. **PWA**: Configurar Service Worker para uso offline en obra.
+5. **CI/CD**: Pipeline de GitHub Actions para build, lint y deploy automático.
+
+---
+© 2026 SuArq - Todos los derechos reservados.

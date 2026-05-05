@@ -1,17 +1,36 @@
-import React, { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes } from 'react';
+import './button.css';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', ...props }) => {
+export function Button({
+  children,
+  variant = 'primary',
+  size = 'md',
+  loading = false,
+  className = '',
+  disabled,
+  ...props
+}: ButtonProps) {
+  const classes = [
+    'btn',
+    `btn-${variant}`,
+    `btn-${size}`,
+    loading ? 'btn-loading' : '',
+    disabled || loading ? 'btn-disabled' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <button 
-      className={`btn btn-${variant}`} 
-      style={{ padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}
-      {...props}
-    >
-      {children}
+    <button className={classes} disabled={disabled || loading} {...props}>
+      {loading && <span className="btn-spinner" />}
+      <span className={loading ? 'btn-content-hidden' : ''}>{children}</span>
     </button>
   );
-};
+}

@@ -1,0 +1,143 @@
+.proveedores-page,
+.form-page-container,
+.detalle-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.form-grid, .filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.form-full {
+  grid-column: 1 / -1;
+}
+
+.form-actions, .filter-actions, .header-actions, .modal-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.filter-actions {
+  align-items: flex-end;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-item label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.detail-item span {
+  font-weight: 500;
+}
+
+.detail-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-section label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.provider-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 500px;
+}
+
+.check-result {
+  margin-top: 1.5rem;
+}
+
+.result-box {
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.result-box.success {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: var(--color-success);
+}
+
+.result-box.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: var(--color-warning);
+}
+
+.result-message {
+  font-weight: 500;
+}
+
+.result-info {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.875rem;
+}
+
+.error-banner {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  margin-bottom: 1.5rem;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+}

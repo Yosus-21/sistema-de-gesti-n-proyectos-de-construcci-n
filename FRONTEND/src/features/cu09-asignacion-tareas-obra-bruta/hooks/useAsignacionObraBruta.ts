@@ -1,0 +1,46 @@
+import { useState, useEffect, useCallback } from 'react';
+import { asignacionesObraBrutaService } from '../services/asignaciones-obra-bruta.service';
+import type { AsignacionObraBruta } from '../types/asignacion-obra-bruta.types';
+
+interface FetchState {
+  asignacion: AsignacionObraBruta | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useAsignacionObraBruta(idAsignacionTarea: number) {
+  const [tick, setTick] = useState(0);
+  const [state, setState] = useState<FetchState>({
+    asignacion: null,
+    loading: !!idAsignacionTarea,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!idAsignacionTarea) return;
+    let cancelled = false;
+    asignacionesObraBrutaService.consultarAsignacionObraBruta(idAsignacionTarea)
+      .then(asignacion => {
+        if (!cancelled) setState({ asignacion, loading: false, error: null });
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setState({
+            asignacion: null,
+            loading: false,
+            error: err instanceof Error ? err.message : 'Error al cargar asignación'
+          });
+        }
+      });
+    return () => { cancelled = true; };
+  }, [idAsignacionTarea, tick]);
+
+  const refetch = useCallback(() => setTick(t => t + 1), []);
+
+  return { 
+    asignacion: state.asignacion, 
+    loading: state.loading, 
+    error: state.error, 
+    refetch 
+  };
+}

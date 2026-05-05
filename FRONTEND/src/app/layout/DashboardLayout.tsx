@@ -1,16 +1,15 @@
-import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import './layout.css';
 
-export const DashboardLayout: React.FC = () => {
+export const DashboardLayout = () => {
   return (
     <div className="dashboard-layout">
       <Sidebar />
-      <div className="dashboard-content">
+      <div className="main-content">
         <Topbar />
-        <main className="dashboard-main">
+        <main className="content-area">
           <Outlet />
         </main>
       </div>

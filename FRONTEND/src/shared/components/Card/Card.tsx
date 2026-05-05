@@ -1,15 +1,27 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import './card.css';
 
 interface CardProps {
-  children: ReactNode;
   title?: string;
+  subtitle?: string;
+  children: ReactNode;
+  actions?: ReactNode;
+  className?: string;
 }
 
-export const Card: React.FC<CardProps> = ({ children, title }) => {
+export function Card({ title, subtitle, children, actions, className = '' }: CardProps) {
   return (
-    <div className="card" style={{ background: '#fff', padding: '1rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-      {title && <h3 style={{ marginBottom: '1rem' }}>{title}</h3>}
-      {children}
+    <div className={`card ${className}`}>
+      {(title ?? subtitle ?? actions) && (
+        <div className="card-header">
+          <div className="card-header-content">
+            {title && <h3 className="card-title">{title}</h3>}
+            {subtitle && <p className="card-subtitle">{subtitle}</p>}
+          </div>
+          {actions && <div className="card-actions">{actions}</div>}
+        </div>
+      )}
+      <div className="card-body">{children}</div>
     </div>
   );
-};
+}

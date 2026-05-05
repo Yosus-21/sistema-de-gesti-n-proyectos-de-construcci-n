@@ -1,0 +1,13 @@
+/* Global table utility styles - specific table styles are in Table/table.css */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-cell-right {
+  text-align: right;
+}
+
+.table-cell-center {
+  text-align: center;
+}

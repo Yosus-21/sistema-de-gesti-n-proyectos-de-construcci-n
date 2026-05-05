@@ -1,0 +1,129 @@
+/* ──────────────────────────────────────────────────────────
+   CU01 – Gestionar Clientes  ·  Module styles
+   ────────────────────────────────────────────────────────── */
+
+/* Page header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+}
+
+/* Filters bar */
+.cliente-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.cliente-filters .filter-input {
+  flex: 1;
+  min-width: 220px;
+  margin-bottom: 0;     /* override wrapper margin when inline */
+}
+
+.cliente-filters .input-wrapper {
+  margin-bottom: 0;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Row actions (table) */
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+/* Form */
+.cliente-form .form-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Feedback banner */
+.feedback-banner {
+  padding: 0.875rem 1.25rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.feedback-banner.error {
+  background: #fce8e6;
+  color: #d32f2f;
+  border: 1px solid #f5c6c6;
+}
+
+/* Detail card */
+.detail-grid {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.detail-row {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  border-bottom: 1px solid #f5f5f5;
+  padding-bottom: 0.875rem;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: var(--text-light);
+  font-size: 0.85rem;
+  min-width: 160px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.detail-value {
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+
+/* Muted fallback text */
+.text-muted {
+  color: #aaa;
+}
+
+/* Detail page actions */
+.detail-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .detail-label {
+    min-width: 100px;
+  }
+}

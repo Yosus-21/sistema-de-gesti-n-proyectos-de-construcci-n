@@ -1,11 +1,43 @@
-import React, { InputHTMLAttributes } from 'react';
+import { useId } from 'react';
+import type { InputHTMLAttributes } from 'react';
+import './input.css';
 
-export const Input: React.FC<InputHTMLAttributes<HTMLInputElement>> = (props) => {
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
+  helperText?: string;
+}
+
+export function Input({
+  label,
+  error,
+  helperText,
+  className = '',
+  id,
+  required,
+  ...props
+}: InputProps) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+
   return (
-    <input 
-      className="form-input" 
-      style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-      {...props} 
-    />
+    <div className={`input-wrapper ${className}`}>
+      {label && (
+        <label htmlFor={inputId} className="input-label">
+          {label} {required && <span className="input-required">*</span>}
+        </label>
+      )}
+      <input
+        id={inputId}
+        className={`input-field ${error ? 'input-error' : ''}`}
+        required={required}
+        {...props}
+      />
+      {(error ?? helperText) && (
+        <span className={`input-message ${error ? 'input-message-error' : ''}`}>
+          {error ?? helperText}
+        </span>
+      )}
+    </div>
   );
-};
+}

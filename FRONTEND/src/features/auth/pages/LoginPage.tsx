@@ -1,25 +1,21 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { LoginForm } from '../components/LoginForm';
-import { useAuth } from '../../../app/providers/AuthProvider';
-import { ROUTES } from '../../../app/router/routes';
+import suarqLogo from '../../../assets/logos/suarq-logo.png';
+import '../styles/auth.css';
 
-const LoginPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-
-  if (isAuthenticated) {
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
-  }
-
+export const LoginPage = () => {
   return (
-    <div className="login-page">
-      <div className="login-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ margin: 0, color: 'var(--color-primary)' }}>SuArq</h1>
-        <p style={{ color: 'var(--color-text-muted)', margin: '0.5rem 0 0' }}>Ingresa a tu cuenta para continuar</p>
+    <div className="auth-container">
+      <div className="auth-header">
+        <div className="login-logo">
+          <img
+            src={suarqLogo}
+            alt="SuArq"
+            className="login-logo-image"
+          />
+        </div>
+        <p>Sistema de Gestión de Proyectos de Construcción</p>
       </div>
       <LoginForm />
     </div>
   );
 };
-
-export default LoginPage;
